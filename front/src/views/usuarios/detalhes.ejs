@@ -1,0 +1,111 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <div class="d-flex align-items-center mb-4">
+            <a href="/usuarios" class="btn btn-light btn-sm rounded-circle me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h4 mb-0 fw-bold">Perfil do Usuário</h1>
+        </div>
+
+        <div class="row g-4">
+            <!-- Sidebar: Perfil Card -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 text-center p-4">
+                    <div class="position-relative d-inline-block mx-auto mb-3">
+                        <img src="<%= usuarioPerfil.fotoUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + usuarioPerfil.nome.replace(' ', '') %>" 
+                             class="rounded-circle border border-4 border-white shadow-sm" width="120" height="120" alt="<%= usuarioPerfil.nome %>">
+                        <span class="position-absolute bottom-0 end-0 p-2 border border-2 border-white rounded-circle <%= usuarioPerfil.ativo ? 'bg-success' : 'bg-danger' %>" 
+                              style="width: 20px; height: 20px;" title="<%= usuarioPerfil.ativo ? 'Ativo' : 'Inativo' %>"></span>
+                    </div>
+                    <h5 class="fw-bold mb-1"><%= usuarioPerfil.nome %></h5>
+                    <p class="text-muted small mb-3"><i class="bi bi-envelope me-1"></i><%= usuarioPerfil.email %></p>
+                    <div class="d-grid">
+                        <span class="badge <%= usuarioPerfil.nivel === 'GESTOR' ? 'bg-potiguar' : 'bg-light text-dark border' %> py-2 mb-3">
+                            <%= usuarioPerfil.nivel %>
+                        </span>
+                    </div>
+                    <div class="border-top pt-3 text-start">
+                        <div class="mb-2">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Loja</small>
+                            <span class="fw-bold"><%= usuarioPerfil.loja || 'Não associada' %></span>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Time</small>
+                            <span class="fw-bold"><%= usuarioPerfil.time ? usuarioPerfil.time.nome : 'Nenhum' %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content: Tasks and Stats -->
+            <div class="col-md-8">
+                <!-- Stats Row -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-sm p-3 text-center h-100">
+                            <h6 class="text-muted small fw-bold">Total de Tarefas</h6>
+                            <div class="h3 fw-bold text-potiguar"><%= tarefas.length %></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-sm p-3 text-center h-100">
+                            <h6 class="text-muted small fw-bold">Concluídas</h6>
+                            <div class="h3 fw-bold text-success"><%= tarefas.filter(t => t.status === 'CONCLUIDA').length %></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-sm p-3 text-center h-100">
+                            <h6 class="text-muted small fw-bold">Atrasadas</h6>
+                            <div class="h3 fw-bold text-danger"><%= tarefas.filter(t => t.status === 'ATRASADA').length %></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tasks Table -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 border-0">
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-list-task me-2"></i>Tarefas sob responsabilidade</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle" style="font-size: 0.9rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-3">Título</th>
+                                        <th>Prazo</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% tarefas.forEach(t => { %>
+                                        <tr>
+                                            <td class="ps-3 fw-bold"><%= t.titulo %></td>
+                                            <td><%= new Date(t.dataPrazo).toLocaleDateString('pt-BR') %></td>
+                                            <td class="text-center">
+                                                <span class="badge rounded-pill <%= t.status === 'CONCLUIDA' ? 'bg-success' : t.status === 'ATRASADA' ? 'bg-danger' : 'bg-primary' %>">
+                                                    <%= t.status.replace('_', ' ') %>
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <a href="/tarefas/<%= t.id %>" class="btn btn-sm btn-light py-0">Ver</a>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                    <% if (tarefas.length === 0) { %>
+                                        <tr><td colspan="4" class="text-center py-4 text-muted">Nenhuma tarefa encontrada para este usuário.</td></tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

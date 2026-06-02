@@ -1,0 +1,104 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="mb-4">
+    <h1 class="h4 mb-0 fw-bold">Gestão de Tarefas</h1>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white pb-0 pt-3">
+    <ul class="nav nav-tabs border-bottom-0" id="taskTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold text-potiguar" id="mine-tab" data-bs-toggle="tab" data-bs-target="#mine" type="button" role="tab">Minhas Tarefas</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-potiguar" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">Tarefas do Time</button>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body p-0">
+    <div class="tab-content" id="taskTabsContent">
+      <!-- Aba Minhas Tarefas -->
+      <div class="tab-pane fade show active" id="mine" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 table-compact">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 border-0">Título</th>
+                <th class="border-0">Prazo</th>
+                <th class="border-0">Complexidade</th>
+                <th class="border-0 text-center">Status</th>
+                <th class="text-end pe-3 border-0">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% minhasTarefas.forEach(tarefa => { %>
+                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>">
+                  <td class="ps-3 fw-bold"><%= tarefa.titulo %></td>
+                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
+                  <td>
+                    <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
+                      <%= tarefa.complexidade %>
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
+                      <%= tarefa.status.replace('_', ' ') %>
+                    </span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
+                  </td>
+                </tr>
+              <% }) %>
+              <% if (minhasTarefas.length === 0) { %>
+                <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma tarefa atribuída a você.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aba Tarefas do Time -->
+      <div class="tab-pane fade" id="team" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 table-compact">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 border-0">Título</th>
+                <th class="border-0">Responsável</th>
+                <th class="border-0">Prazo</th>
+                <th class="border-0">Complexidade</th>
+                <th class="border-0 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% todasTarefas.forEach(tarefa => { %>
+                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>">
+                  <td class="ps-3 fw-bold text-muted"><%= tarefa.titulo %></td>
+                  <td><%= tarefa.responsavel.nome %></td>
+                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
+                  <td>
+                    <span class="badge bg-secondary opacity-75">
+                      <%= tarefa.complexidade %>
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <%= tarefa.status.replace('_', ' ') %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+              <% if (todasTarefas.length === 0) { %>
+                <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma tarefa registrada no sistema.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,130 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-10">
+    <div class="card shadow-sm <%= tarefa.status === 'CONCLUIDA' ? 'card-header-concluida' : tarefa.status === 'ATRASADA' ? 'card-header-atrasada' : 'card-header-total' %>">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+          <div>
+            <h1 class="h2 fw-bold text-potiguar mb-1">
+                <%= tarefa.titulo %>
+                <% if (tarefa.criadoPor && tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === tarefa.criadoPor.id)) { %>
+                    <span class="badge bg-info text-dark ms-2 small fw-normal" style="font-size: 0.8rem;">
+                        <i class="bi bi-person-check me-1"></i> Auto-atribuída
+                    </span>
+                <% } %>
+            </h1>
+            <p class="text-muted small">
+              <i class="bi bi-calendar-event me-1"></i>Criada em: <%= new Date(tarefa.dataCriacao).toLocaleString('pt-BR') %>
+              <% if (tarefa.criadoPor) { %>
+                <span class="ms-3"><i class="bi bi-person-badge me-1"></i>Por: <strong><%= tarefa.criadoPor.nome %></strong></span>
+              <% } %>
+            </p>
+          </div>
+          <span class="badge rounded-pill px-3 py-2 <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
+            <%= tarefa.status.replace('_', ' ') %>
+          </span>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12">
+            <h6 class="fw-bold border-bottom pb-2">Descrição</h6>
+            <p class="text-secondary"><%= tarefa.descricao || 'Sem descrição.' %></p>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+                <small class="text-muted d-block fw-bold text-uppercase">Complexidade</small>
+                <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : 'bg-secondary' %>"><%= tarefa.complexidade %></span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+                <small class="text-muted d-block fw-bold text-uppercase">Prazo</small>
+                <span class="fw-bold text-dark"><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+                <small class="text-muted d-block fw-bold text-uppercase">Responsável(is)</small>
+                <span class="fw-bold text-dark">
+                  <% if (tarefa.time) { %>
+                    <i class="bi bi-people me-1"></i>Time: <%= tarefa.time.nome %>
+                  <% } else if (tarefa.responsaveis && tarefa.responsaveis.length > 0) { %>
+                    <i class="bi bi-person me-1"></i><%= tarefa.responsaveis.map(r => r.nome).join(', ') %>
+                  <% } else { %>
+                    Nenhum
+                  <% } %>
+                </span>
+            </div>
+          </div>
+        </div>
+
+        <% if (tarefa.evidencia) { %>
+          <div class="alert alert-info mt-4">
+            <h6 class="alert-heading fw-bold"><i class="bi bi-info-circle me-2"></i>Evidência de Conclusão</h6>
+            <p class="mb-0 small"><%= tarefa.evidencia %></p>
+          </div>
+        <% } %>
+
+        <% 
+          const isResponsavel = (tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === usuario.id)) || 
+                               (tarefa.time && usuario.time && tarefa.time.id === usuario.time.id);
+        %>
+
+        <% if (isResponsavel && tarefa.status !== 'CONCLUIDA') { %>
+          <hr class="my-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-arrow-repeat me-2"></i>Atualizar Status</h5>
+          <form action="/tarefas/<%= tarefa.id %>/status" method="POST" onsubmit="return handleStatusSubmit(event)">
+            <div class="row align-items-end g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Novo Status</label>
+                <select class="form-select" name="status" id="statusSelect" onchange="toggleEvidencia(this.value)">
+                  <option value="PENDENTE" <%= tarefa.status === 'PENDENTE' ? 'selected' : '' %>>Pendente</option>
+                  <option value="EM_ANDAMENTO" <%= tarefa.status === 'EM_ANDAMENTO' ? 'selected' : '' %>>Em Andamento</option>
+                  <option value="CONCLUIDA">Concluída</option>
+                </select>
+              </div>
+
+              <div class="col-md-8" id="evidenciaField" style="display: none;">
+                <label class="form-label fw-bold">Evidência (Obrigatório para concluir)</label>
+                <textarea class="form-control" name="evidencia" rows="1" placeholder="Descreva o que foi feito..."></textarea>
+              </div>
+
+              <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-potiguar px-4" id="btnSubmitStatus">
+                    Salvar Alteração
+                </button>
+              </div>
+            </div>
+          </form>
+        <% } %>
+        
+        <div class="mt-5">
+          <a href="/dashboard" class="btn btn-light text-muted btn-sm"><i class="bi bi-arrow-left me-1"></i>Voltar para Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleEvidencia(status) {
+  const field = document.getElementById('evidenciaField');
+  field.style.display = (status === 'CONCLUIDA') ? 'block' : 'none';
+  const textarea = field.querySelector('textarea');
+  if (status === 'CONCLUIDA') textarea.setAttribute('required', 'required');
+  else textarea.removeAttribute('required');
+}
+
+function handleStatusSubmit(e) {
+    const status = document.getElementById('statusSelect').value;
+    if (status === 'CONCLUIDA') {
+        return confirmarAcao(e, 'Concluir Tarefa?', 'Deseja realmente marcar esta tarefa como concluída?');
+    }
+    return true;
+}
+</script>
+
+<%- include('../partials/footer') %>

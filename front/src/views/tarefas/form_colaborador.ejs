@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-potiguar text-white py-3">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-person-plus me-2"></i>Nova Tarefa Pessoal</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="alert alert-info py-2 small mb-4">
+            <i class="bi bi-info-circle me-1"></i> Esta tarefa será atribuída automaticamente a <strong>você</strong>.
+        </div>
+        
+        <form action="/tarefas" method="POST">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Título</label>
+            <input class="form-control" type="text" name="titulo" placeholder="Ex: Organizar minha mesa" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descrição</label>
+            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."></textarea>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Complexidade</label>
+              <select class="form-select" name="complexidade">
+                <option value="BAIXA">Baixa</option>
+                <option value="MEDIA">Média</option>
+                <option value="ALTA">Alta</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Prazo</label>
+              <input class="form-control" type="date" name="dataPrazo" required>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="/dashboard" class="btn btn-light px-4">Cancelar</a>
+            <button type="submit" class="btn btn-potiguar px-4">Criar Minha Tarefa</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,221 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 mb-0 fw-bold">Meu Workspace <span class="badge bg-potiguar fw-normal">Colaborador</span></h1>
+    <a href="/tarefas/nova" class="btn btn-potiguar btn-sm shadow-sm"><i class="bi bi-plus-lg me-1"></i> Nova Tarefa</a>
+</div>
+
+<!-- Cards de Resumo -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card stat-card total shadow-sm h-100 py-2">
+      <div class="card-body py-2 px-3">
+        <div class="row align-items-center g-0">
+          <div class="col me-2">
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Total Atribuídas</div>
+            <div class="stat-value text-potiguar"><%= minhasTarefas.length %></div>
+          </div>
+          <div class="col-auto">
+            <i class="bi bi-list-task fs-2 text-potiguar opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card pendente shadow-sm h-100 py-2">
+      <div class="card-body py-2 px-3">
+        <div class="row align-items-center g-0">
+          <div class="col me-2">
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Pendentes</div>
+            <div class="stat-value text-warning">
+                <%= minhasTarefas.filter(t => t.status === 'PENDENTE' || t.status === 'EM_ANDAMENTO' || t.status === 'ATRASADA').length %>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="bi bi-clock fs-2 text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card concluida shadow-sm h-100 py-2">
+      <div class="card-body py-2 px-3">
+        <div class="row align-items-center g-0">
+          <div class="col me-2">
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Concluídas</div>
+            <div class="stat-value text-success">
+                <%= minhasTarefas.filter(t => t.status === 'CONCLUIDA').length %>
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="bi bi-check-circle fs-2 text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros Rápidos -->
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-8">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="liveSearch" class="form-control border-start-0" placeholder="Filtrar tarefas nesta página...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="liveStatus" class="form-select form-select-sm">
+                    <option value="">Todos os Status</option>
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="EM_ANDAMENTO">Em Andamento</option>
+                    <option value="CONCLUIDA">Concluída</option>
+                    <option value="ATRASADA">Atrasada</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Abas de Tarefas -->
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white pb-0 pt-3">
+    <ul class="nav nav-tabs border-bottom-0" id="taskTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold text-potiguar" id="mine-tab" data-bs-toggle="tab" data-bs-target="#mine" type="button" role="tab">Minhas Tarefas</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-potiguar" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">Tarefas do Time</button>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body p-0">
+    <div class="tab-content" id="taskTabsContent">
+      <!-- Aba Minhas Tarefas -->
+      <div class="tab-pane fade show active" id="mine" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 table-compact table-potiguar" id="tableMine">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 border-0">Título</th>
+                <th class="border-0">Prazo</th>
+                <th class="border-0">Complexidade</th>
+                <th class="border-0 text-center">Status</th>
+                <th class="text-end pe-3 border-0">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% minhasTarefas.forEach(tarefa => { %>
+                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>" data-status="<%= tarefa.status %>" data-titulo="<%= tarefa.titulo.toLowerCase() %>">
+                  <td class="ps-3 fw-bold"><%= tarefa.titulo %></td>
+                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
+                  <td>
+                    <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
+                      <%= tarefa.complexidade %>
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
+                      <%= tarefa.status.replace('_', ' ') %>
+                    </span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
+                  </td>
+                </tr>
+              <% }) %>
+              <% if (minhasTarefas.length === 0) { %>
+                <tr><td colspan="5" class="text-center py-4 text-muted small">Nenhuma tarefa atribuída a você.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aba Tarefas do Time -->
+      <div class="tab-pane fade" id="team" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 table-compact table-potiguar" id="tableTeam">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3 border-0">Título</th>
+                <th class="border-0">Responsável</th>
+                <th class="border-0">Prazo</th>
+                <th class="border-0">Complexidade</th>
+                <th class="border-0 text-center">Status</th>
+                <th class="text-end pe-3 border-0">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% todasTarefas.forEach(tarefa => { %>
+                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>" data-status="<%= tarefa.status %>" data-titulo="<%= tarefa.titulo.toLowerCase() %>">
+                  <td class="ps-3 fw-bold text-muted"><%= tarefa.titulo %></td>
+                  <td>
+                    <% if (tarefa.responsaveis && tarefa.responsaveis.length > 0) { %>
+                      <%= tarefa.responsaveis.map(r => r.nome).join(', ') %>
+                    <% } else { %>
+                      <%= tarefa.time ? tarefa.time.nome : '-' %>
+                    <% } %>
+                  </td>
+                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
+                  <td>
+                    <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
+                      <%= tarefa.complexidade %>
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
+                      <%= tarefa.status.replace('_', ' ') %>
+                    </span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
+                  </td>
+                </tr>
+              <% }) %>
+              <% if (todasTarefas.length === 0) { %>
+                <tr><td colspan="5" class="text-center py-4 text-muted small">Nenhuma tarefa registrada para o seu time.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function applyFilters() {
+        const search = document.getElementById('liveSearch').value.toLowerCase();
+        const status = document.getElementById('liveStatus').value;
+        
+        document.querySelectorAll('tbody tr').forEach(row => {
+            if (row.cells.length < 2) return; // Pula a linha de "nenhuma tarefa"
+            
+            const matchesSearch = row.dataset.titulo.includes(search);
+            const matchesStatus = status === "" || row.dataset.status === status;
+            
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    document.getElementById('liveSearch').addEventListener('input', applyFilters);
+    document.getElementById('liveStatus').addEventListener('change', applyFilters);
+
+    // Inicializar Paginação
+    document.addEventListener('DOMContentLoaded', () => {
+        paginarTabela('tableMine', 10);
+        paginarTabela('tableTeam', 10);
+    });
+</script>
+
+<%- include('../partials/footer') %>

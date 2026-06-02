@@ -1,0 +1,142 @@
+</main>
+<footer class="bg-white border-top mt-auto py-4">
+  <div class="container text-center text-muted">
+    <small>&copy; 2026 <strong>TarefasRH Potiguar</strong> - Protótipo de RH</small>
+  </div>
+</footer>
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Gerenciamento de estado da Sidebar
+    const sidebar = document.getElementById('mainSidebar');
+    const content = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const toggleBtnMobile = document.getElementById('sidebarToggleMobile');
+
+    // Aplicar estado salvo no carregamento
+    if (window.innerWidth >= 992) {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('sidebar-collapsed');
+        }
+    }
+
+    function toggleSidebar() {
+        if (window.innerWidth >= 992) {
+            // Desktop: Alternar entre expandido e ícones
+            const nowCollapsed = sidebar.classList.toggle('collapsed');
+            content.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', nowCollapsed);
+        } else {
+            // Mobile: Overlay deslizante
+            sidebar.classList.toggle('active');
+        }
+    }
+
+    toggleBtn?.addEventListener('click', toggleSidebar);
+    toggleBtnMobile?.addEventListener('click', toggleSidebar);
+
+    // Fechar sidebar ao clicar fora no mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth < 992 && 
+            sidebar.classList.contains('active') && 
+            !sidebar.contains(e.target) && 
+            e.target !== toggleBtnMobile && 
+            !toggleBtnMobile.contains(e.target)) {
+            sidebar.classList.remove('active');
+        }
+    });
+
+    function confirmarAcao(event, titulo, texto) {
+        event.preventDefault();
+        const form = event.target.closest('form');
+        
+        Swal.fire({
+            title: titulo || 'Tem certeza?',
+            text: texto || 'Esta ação não pode ser desfeita.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ed1a25',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, confirmar!',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+        return false;
+    }
+
+    function paginarTabela(tableId, itemsPerPage = 10) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr:not(.no-data)'));
+        const totalPages = Math.ceil(rows.length / itemsPerPage);
+        
+        if (totalPages <= 1) return;
+
+        let currentPage = 1;
+
+        // Criar container de paginação se não existir
+        let paginationContainer = table.nextElementSibling;
+        if (!paginationContainer || !paginationContainer.classList.contains('pagination-container')) {
+            paginationContainer = document.createElement('div');
+            paginationContainer.className = 'pagination-container d-flex justify-content-center py-3 bg-white border-top';
+            table.parentNode.insertBefore(paginationContainer, table.nextSibling);
+        }
+
+        function showPage(page) {
+            currentPage = page;
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+
+            rows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+
+            renderControls();
+        }
+
+        function renderControls() {
+            paginationContainer.innerHTML = '';
+            const nav = document.createElement('nav');
+            const ul = document.createElement('ul');
+            ul.className = 'pagination pagination-sm mb-0';
+
+            // Anterior
+            const liPrev = document.createElement('li');
+            liPrev.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            liPrev.innerHTML = `<a class="page-link" href="#"><i class="bi bi-chevron-left"></i></a>`;
+            liPrev.onclick = (e) => { e.preventDefault(); if (currentPage > 1) showPage(currentPage - 1); };
+            ul.appendChild(liPrev);
+
+            // Números
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${currentPage === i ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                li.onclick = (e) => { e.preventDefault(); showPage(i); };
+                ul.appendChild(li);
+            }
+
+            // Próximo
+            const liNext = document.createElement('li');
+            liNext.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            liNext.innerHTML = `<a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>`;
+            liNext.onclick = (e) => { e.preventDefault(); if (currentPage < totalPages) showPage(currentPage + 1); };
+            ul.appendChild(liNext);
+
+            nav.appendChild(ul);
+            paginationContainer.appendChild(nav);
+        }
+
+        showPage(1);
+    }
+</script>
+</body>
+</html>

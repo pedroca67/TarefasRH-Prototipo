@@ -1,0 +1,50 @@
+<%- include('../partials/header') %>
+
+<section class="min-vh-100 d-flex align-items-center bg-potiguar">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-5 col-lg-4">
+        <div class="card shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+          <div class="card-body p-5">
+            <div class="text-center mb-5">
+              <img src="/img/logoHorizontal.png" alt="Potiguar" class="mb-4" style="max-height: 60px; max-width: 220px; object-fit: contain;">
+              <p class="text-muted small mt-2">Portal Administrativo</p>
+            </div>
+            
+            <% if (error) { %>
+              <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                <i class="bi bi-exclamation-circle me-1"></i> <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            <% } %>
+
+            <form action="/login" method="POST">
+              <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">E-MAIL CORPORATIVO</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                  <input class="form-control bg-light border" type="email" name="email" placeholder="exemplo@potiguar.com.br" required>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">SENHA</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                  <input class="form-control bg-light border" type="password" name="senha" placeholder="********" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-potiguar w-100 py-3 fw-bold shadow-sm">ENTRAR NO SISTEMA</button>
+            </form>
+          </div>
+        </div>
+        <div class="text-center mt-4 text-white opacity-50 small">
+          &copy; 2026 Grupo Potiguar. Todos os direitos reservados.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

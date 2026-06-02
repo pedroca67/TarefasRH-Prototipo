@@ -1,0 +1,434 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<style>
+  .multi-select-container { position: relative; width: 100%; }
+  
+  .ms-box {
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    padding: 8px;
+    min-height: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    cursor: text;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .ms-box:focus-within {
+    border-color: var(--potiguar-blue);
+    box-shadow: 0 0 0 3px rgba(0, 82, 155, 0.12);
+  }
+  .ms-box.disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  /* --- Chips --- */
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ede9ff;
+    color: #4b3fcc;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 3px 6px 3px 4px;
+    border-radius: 999px;
+    animation: chipIn 0.15s ease;
+  }
+  @keyframes chipIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  .chip-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: white;
+  }
+  .chip-remove {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #7b6ef0;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0.6;
+    transition: opacity 0.1s;
+  }
+  .chip-remove:hover { opacity: 1; }
+
+  /* --- Input de busca --- */
+  .ms-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: #222;
+    flex: 1;
+    min-width: 120px;
+    padding: 2px 4px;
+  }
+  .ms-input::placeholder { color: #aaa; }
+
+  /* --- Dropdown --- */
+  .ms-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    margin-top: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    display: none;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  .ms-dropdown.open { display: block; }
+
+  .ms-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .ms-opt:hover, .ms-opt.active { background: #f7f6ff; }
+  .ms-opt.selected { color: #4b3fcc; background: #f0edff; }
+
+  .opt-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: white;
+  }
+  .opt-name { flex: 1; }
+  .opt-check {
+    font-size: 16px;
+    color: #6c63ff;
+    visibility: hidden;
+  }
+  .ms-opt.selected .opt-check { visibility: visible; }
+
+  .ms-empty {
+    padding: 14px;
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+  }
+
+  /* --- Rodapé --- */
+  .ms-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    min-height: 20px;
+  }
+  .ms-hint { font-size: 12px; color: #aaa; }
+  .ms-count { font-size: 12px; font-weight: 600; color: #6c63ff; }
+
+  /* --- Aviso de validação --- */
+  .ms-warning {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c0392b;
+    margin-top: 10px;
+  }
+  .ms-warning.show { display: flex; }
+</style>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-potiguar text-white py-3 border-0" style="border-radius: 12px 12px 0 0;">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-plus-lg me-2"></i>Nova Tarefa</h5>
+      </div>
+      <div class="card-body p-4">
+        <form action="/tarefas" method="POST" id="taskForm">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Título</label>
+            <input class="form-control" type="text" name="titulo" placeholder="Ex: Organizar Arquivos do RH" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descrição</label>
+            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."></textarea>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Complexidade</label>
+              <select class="form-select" name="complexidade">
+                <option value="BAIXA">Baixa</option>
+                <option value="MEDIA">Média</option>
+                <option value="ALTA">Alta</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Prazo</label>
+              <input class="form-control" type="date" name="dataPrazo" required>
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 0.04em;">Responsável(is) Individual(is)</label>
+              <div class="multi-select-container" id="colabMultiSelect">
+                <div class="ms-box" id="ms-box">
+                  <div id="chipsContainer" style="display: contents;"></div>
+                  <input
+                    class="ms-input"
+                    id="ms-search"
+                    placeholder="Buscar colaborador..."
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="ms-dropdown" id="ms-dropdown"></div>
+                
+                <div class="ms-footer">
+                  <span class="ms-hint" id="ms-hint">Clique para adicionar colaboradores</span>
+                  <span class="ms-count" id="ms-count"></span>
+                </div>
+                
+                <div class="ms-warning" id="ms-warning">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>
+                  Selecione pelo menos um responsável ou um time.
+                </div>
+              </div>
+              <div id="hiddenInputsContainer"></div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 0.04em;">Time Responsável</label>
+              <select class="form-select" name="timeId" id="timeSelect" style="height: 50px; border-radius: 10px;" onchange="toggleAssignment('time')">
+                <option value="">Nenhum (Atribuição Individual)</option>
+                <% times.forEach(t => { %>
+                  <option value="<%= t.id %>"><%= t.nome %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="/dashboard" class="btn btn-light px-4">Cancelar</a>
+            <button type="submit" class="btn btn-potiguar px-4">Criar Tarefa</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="colaboradores-data" type="application/json">
+    <%- JSON.stringify(usuarios.filter(u => u.nivel === 'COLABORADOR')) %>
+</script>
+
+<script>
+const colaboradores = JSON.parse(document.getElementById('colaboradores-data').textContent);
+let selectedIds = new Set();
+let highlightedIndex = -1;
+
+const container = document.getElementById('colabMultiSelect');
+const msBox = document.getElementById('ms-box');
+const searchInput = document.getElementById('ms-search');
+const dropdown = document.getElementById('ms-dropdown');
+const chipsContainer = document.getElementById('chipsContainer');
+const hiddenContainer = document.getElementById('hiddenInputsContainer');
+const msCount = document.getElementById('ms-count');
+const msHint = document.getElementById('ms-hint');
+const timeSelect = document.getElementById('timeSelect');
+const msWarning = document.getElementById('ms-warning');
+
+// Gera uma URL de avatar aleatório baseado no nome (DiceBear)
+function getAvatarUrl(name) {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+}
+
+function renderChips() {
+  chipsContainer.innerHTML = '';
+  hiddenContainer.innerHTML = '';
+  
+  selectedIds.forEach(id => {
+    const colab = colaboradores.find(c => c.id == id);
+    if (!colab) return;
+    
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `
+      <img src="${getAvatarUrl(colab.nome)}" class="chip-avatar" alt="${colab.nome}">
+      <span>${colab.nome.split(' ')[0]}</span>
+      <button type="button" class="chip-remove" onclick="removeColab(event, ${colab.id})">×</button>
+    `;
+    chipsContainer.appendChild(chip);
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'responsavelId';
+    input.value = colab.id;
+    hiddenContainer.appendChild(input);
+  });
+  
+  const count = selectedIds.size;
+  msCount.innerText = count > 0 ? `${count} selecionado${count > 1 ? 's' : ''}` : '';
+  msHint.innerText = count === 0 ? 'Clique para adicionar colaboradores' : '';
+  
+  if (count > 0) {
+    timeSelect.value = "";
+    timeSelect.disabled = true;
+  } else if (timeSelect.value === "") {
+    timeSelect.disabled = false;
+  }
+}
+
+function renderDropdown(filter = '') {
+  dropdown.innerHTML = '';
+  const filtered = colaboradores.filter(c => 
+    c.nome.toLowerCase().includes(filter.toLowerCase()) || 
+    c.email.toLowerCase().includes(filter.toLowerCase())
+  );
+  
+  if (filtered.length === 0) {
+    dropdown.innerHTML = '<div class="ms-empty">Nenhum colaborador encontrado</div>';
+    return;
+  }
+  
+  filtered.forEach((colab, index) => {
+    const isSelected = selectedIds.has(colab.id);
+    const item = document.createElement('div');
+    item.className = `ms-opt ${isSelected ? 'selected' : ''} ${index === highlightedIndex ? 'active' : ''}`;
+    item.dataset.id = colab.id;
+    item.onmousedown = (e) => {
+      e.preventDefault(); 
+      toggleColab(colab.id);
+    };
+    
+    item.innerHTML = `
+      <img src="${getAvatarUrl(colab.nome)}" class="opt-avatar" alt="${colab.nome}">
+      <span class="opt-name">${colab.nome}</span>
+      <span class="opt-check">✓</span>
+    `;
+    dropdown.appendChild(item);
+  });
+}
+
+function toggleColab(id) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  renderChips();
+  renderDropdown(searchInput.value);
+  msWarning.classList.remove('show');
+  msBox.style.borderColor = '';
+}
+
+function removeColab(e, id) {
+  if (e) e.stopPropagation();
+  selectedIds.delete(id);
+  renderChips();
+  renderDropdown(searchInput.value);
+}
+
+// Event Listeners
+msBox.onclick = () => searchInput.focus();
+
+searchInput.onfocus = () => {
+  if (!timeSelect.disabled) {
+    dropdown.classList.add('open');
+    renderDropdown(searchInput.value);
+  }
+};
+
+searchInput.oninput = () => {
+  highlightedIndex = -1;
+  renderDropdown(searchInput.value);
+};
+
+searchInput.onkeydown = (e) => {
+  const items = dropdown.querySelectorAll('.ms-opt');
+  
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+    renderDropdown(searchInput.value);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    highlightedIndex = Math.max(highlightedIndex - 1, 0);
+    renderDropdown(searchInput.value);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (highlightedIndex >= 0 && items[highlightedIndex]) {
+      toggleColab(parseInt(items[highlightedIndex].dataset.id));
+    }
+  } else if (e.key === 'Backspace' && searchInput.value === '' && selectedIds.size > 0) {
+    const lastId = Array.from(selectedIds).pop();
+    removeColab(null, lastId);
+  } else if (e.key === 'Escape') {
+    dropdown.classList.remove('open');
+    searchInput.blur();
+  }
+};
+
+document.addEventListener('click', (e) => {
+  if (!container.contains(e.target)) {
+    dropdown.classList.remove('open');
+    searchInput.value = '';
+    highlightedIndex = -1;
+  }
+});
+
+function toggleAssignment(type) {
+  if (type === 'time' && timeSelect.value !== "") {
+    selectedIds.clear();
+    renderChips();
+    msBox.classList.add('disabled');
+    searchInput.disabled = true;
+    searchInput.placeholder = "Atribuição por time ativa";
+  } else {
+    msBox.classList.remove('disabled');
+    searchInput.disabled = false;
+    searchInput.placeholder = "Buscar colaborador...";
+  }
+}
+
+document.getElementById('taskForm').onsubmit = function(e) {
+  if (selectedIds.size === 0 && timeSelect.value === "") {
+    e.preventDefault();
+    msWarning.classList.add('show');
+    msBox.style.borderColor = '#c0392b';
+    return false;
+  }
+};
+</script>
+
+<%- include('../partials/footer') %>

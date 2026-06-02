@@ -1,0 +1,21 @@
+# Dependencies
+front/node_modules/
+
+# Build outputs
+back/target/
+front/dist/
+
+# Local environment and secrets
+.env
+*.env
+front/.env
+back/src/main/resources/application-local.properties
+back/src/main/resources/credentials.json
+back/secrets/
+
+# IDE / OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

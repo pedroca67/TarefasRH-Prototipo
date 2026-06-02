@@ -1,0 +1,61 @@
+<div class="sidebar" id="mainSidebar">
+  <div class="sidebar-header-toggle d-flex align-items-center justify-content-between p-3 border-bottom border-white-50" style="min-height: 80px;">
+    <div class="sidebar-brand">
+      <img src="/img/logoHorizontal.png" alt="Potiguar" class="brand-logo" style="max-height: 35px; max-width: 140px; object-fit: contain;">
+      <img src="/img/logo.jpg" alt="Potiguar" class="brand-logo-collapsed d-none" style="max-height: 30px; max-width: 45px; object-fit: contain; border-radius: 4px;">
+    </div>
+    <button class="btn btn-link text-white p-0" id="sidebarToggle">
+      <i class="bi bi-list fs-3"></i>
+    </button>
+  </div>
+  
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="nav-link-custom <%= currentPage === 'dashboard' ? 'active' : '' %>">
+      <i class="bi bi-grid-1x2"></i> <span><%= usuario.nivel === 'GESTOR' ? 'Dashboard' : 'Meu Workspace' %></span>
+    </a>
+    
+    <% if (usuario.nivel === 'GESTOR') { %>
+      <a href="/tarefas" class="nav-link-custom <%= currentPage === 'tarefas' ? 'active' : '' %>">
+        <i class="bi bi-card-checklist"></i> <span>Tarefas</span>
+      </a>
+      <a href="/usuarios" class="nav-link-custom <%= currentPage === 'usuarios' ? 'active' : '' %>">
+        <i class="bi bi-people"></i> <span>Usuários</span>
+      </a>
+    <% } %>
+
+    <a href="/perfil" class="nav-link-custom <%= currentPage === 'perfil' ? 'active' : '' %>">
+      <i class="bi bi-person-circle"></i> <span>Meu Perfil</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="/logout" class="nav-link-custom text-danger">
+      <i class="bi bi-box-arrow-left"></i> <span>Sair</span>
+    </a>
+  </div>
+</div>
+
+<div class="main-content" id="mainContent">
+  <header class="top-header">
+    <div class="me-auto"></div>
+    <div class="user-info d-flex align-items-center">
+      <a href="/perfil" class="text-decoration-none d-flex align-items-center">
+        <span class="me-3 text-muted small d-none d-md-inline">Bem-vindo, <strong><%= usuario.nome %></strong></span>
+        <% if (usuario.fotoUrl) { %>
+          <img src="<%= usuario.fotoUrl %>" alt="<%= usuario.nome %>" class="rounded-circle border" style="width: 35px; height: 35px; object-fit: cover;">
+        <% } else { %>
+          <div class="rounded-circle bg-potiguar text-white d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+            <%= usuario.nome.charAt(0) %>
+          </div>
+        <% } %>
+      </a>
+    </div>
+  </header>
+  
+  <!-- Botão flutuante apenas para Mobile -->
+  <button class="btn btn-potiguar d-lg-none" id="sidebarToggleMobile">
+    <i class="bi bi-list fs-3"></i>
+  </button>
+  
+  <div class="content-body">
+    <%- include('./alerts') %>
