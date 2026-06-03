@@ -10,10 +10,12 @@
     // Gerenciamento de estado da Sidebar
     const sidebar = document.getElementById('mainSidebar');
     const content = document.getElementById('mainContent');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const toggleBtnMobile = document.getElementById('sidebarToggleMobile');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('sidebarToggle'); // Botão dentro da sidebar
+    const toggleBtnMobile = document.getElementById('sidebarToggleMobile'); // Botão hamburguer no topo
+    const toggleIcon = document.getElementById('sidebarToggleIcon');
 
-    // Aplicar estado salvo no carregamento
+    // Aplicar estado salvo no carregamento (apenas Desktop)
     if (window.innerWidth >= 992) {
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         if (isCollapsed) {
@@ -23,28 +25,45 @@
     }
 
     function toggleSidebar() {
-        if (window.innerWidth >= 992) {
-            // Desktop: Alternar entre expandido e ícones
+        if (window.innerWidth > 768) {
+            // DESKTOP: Alternar entre expandido e ícones
             const nowCollapsed = sidebar.classList.toggle('collapsed');
             content.classList.toggle('sidebar-collapsed');
             localStorage.setItem('sidebarCollapsed', nowCollapsed);
         } else {
-            // Mobile: Overlay deslizante
-            sidebar.classList.toggle('active');
+            // MOBILE: Abrir como Overlay
+            const nowOpen = sidebar.classList.toggle('open');
+            overlay.classList.toggle('active', nowOpen);
+            
+            // Trocar ícone para X quando aberto no mobile
+            if (toggleIcon) {
+                if (nowOpen) {
+                    toggleIcon.classList.replace('bi-list', 'bi-x-lg');
+                } else {
+                    toggleIcon.classList.replace('bi-x-lg', 'bi-list');
+                }
+            }
+        }
+    }
+
+    function closeSidebarMobile() {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            if (toggleIcon) {
+                toggleIcon.classList.replace('bi-x-lg', 'bi-list');
+            }
         }
     }
 
     toggleBtn?.addEventListener('click', toggleSidebar);
     toggleBtnMobile?.addEventListener('click', toggleSidebar);
+    overlay?.addEventListener('click', closeSidebarMobile);
 
-    // Fechar sidebar ao clicar fora no mobile
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth < 992 && 
-            sidebar.classList.contains('active') && 
-            !sidebar.contains(e.target) && 
-            e.target !== toggleBtnMobile && 
-            !toggleBtnMobile.contains(e.target)) {
-            sidebar.classList.remove('active');
+    // Ajustar estado ao redimensionar a janela
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeSidebarMobile();
         }
     });
 

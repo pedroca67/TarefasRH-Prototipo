@@ -23,7 +23,7 @@ body {
     z-index: 1050;
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease;
+    transition: all 0.3s ease;
     overflow-x: hidden;
 }
 
@@ -136,31 +136,145 @@ body {
 }
 
 /* Mobile Adjustments */
-@media (max-width: 991.98px) {
+@media (max-width: 768px) {
     .sidebar {
-        left: -var(--sidebar-width);
-        width: var(--sidebar-width) !important;
+        left: -100% !important;
+        width: 280px !important;
+        z-index: 1050;
+        transition: left 0.3s ease !important;
+        transform: none !important;
     }
-    .sidebar.active {
-        left: 0;
+    
+    .sidebar.open {
+        left: 0 !important;
     }
+
+    .sidebar.collapsed {
+        left: -100% !important;
+        width: 280px !important;
+    }
+    .sidebar.collapsed.open {
+        left: 0 !important;
+    }
+    .sidebar.collapsed .nav-link-custom span { display: inline !important; }
+    .sidebar.collapsed .nav-link-custom i { margin-right: 0.75rem !important; }
+    .sidebar.collapsed .sidebar-brand .brand-logo { display: block !important; }
+    .sidebar.collapsed .sidebar-brand .brand-logo-collapsed { display: none !important; }
+
     .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-top: 60px !important;
+    }
+
+    .main-content.sidebar-collapsed {
         margin-left: 0 !important;
     }
     
-    #sidebarToggleMobile {
+    .mobile-top-bar {
+        display: flex !important;
         position: fixed;
-        bottom: 25px;
-        right: 25px;
-        z-index: 1060;
-        width: 60px;
+        top: 0;
+        left: 0;
+        right: 0;
         height: 60px;
-        border-radius: 50%;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        display: flex;
+        background-color: #1a1a4e;
+        color: white;
+        z-index: 1045;
         align-items: center;
-        justify-content: center;
+        padding: 0 1rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        justify-content: space-between;
     }
+
+    .mobile-user-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.2);
+        object-fit: cover;
+    }
+
+    .top-header {
+        display: none !important;
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        z-index: 1040;
+        backdrop-filter: blur(3px);
+    }
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    /* Stat Cards Padding */
+    .stat-card .card-body {
+        padding: 1.5rem !important;
+    }
+
+    /* Mobile Table to Card Transformation */
+    .table-potiguar thead {
+        display: none;
+    }
+
+    .table-potiguar tbody tr {
+        display: block;
+        background: white;
+        border: 1px solid #eee !important;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .table-potiguar tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: none;
+        padding: 0.5rem 0 !important;
+        text-align: right;
+        font-size: 0.95rem;
+    }
+
+    .table-potiguar tbody td:first-child {
+        display: block;
+        text-align: left;
+        font-size: 1.1rem;
+        color: var(--potiguar-blue);
+        border-bottom: 1px solid #f8f9fa;
+        padding-bottom: 0.75rem !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .table-potiguar tbody td:last-child {
+        justify-content: center;
+        border-top: 1px solid #f8f9fa;
+        padding-top: 0.75rem !important;
+        margin-top: 0.5rem;
+    }
+
+    /* Labels for mobile cards */
+    .table-potiguar tbody td:nth-child(2)::before { content: "Resp/Time:"; font-weight: bold; color: #6c757d; font-size: 0.8rem; text-transform: uppercase; }
+    .table-potiguar tbody td:nth-child(3)::before { content: "Prazo:"; font-weight: bold; color: #6c757d; font-size: 0.8rem; text-transform: uppercase; }
+    .table-potiguar tbody td:nth-child(4)::before { content: "Complexidade:"; font-weight: bold; color: #6c757d; font-size: 0.8rem; text-transform: uppercase; }
+    .table-potiguar tbody td:nth-child(5)::before { content: "Status:"; font-weight: bold; color: #6c757d; font-size: 0.8rem; text-transform: uppercase; }
+
+    .table-potiguar tbody td::before {
+        float: left;
+        margin-right: 1rem;
+    }
+}
+
+.mobile-top-bar {
+    display: none;
 }
 
 /* Global Placeholder Styling */

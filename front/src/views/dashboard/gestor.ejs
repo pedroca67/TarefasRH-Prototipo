@@ -3,19 +3,25 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h4 mb-0 fw-bold">Dashboard <span class="badge bg-potiguar fw-normal">Gestor</span></h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-1 gap-md-2">
         <% if (lookerStudioUrl) { %>
-        <a href="<%= lookerStudioUrl %>" target="_blank" class="btn btn-outline-primary btn-sm shadow-sm">
+        <a href="<%= lookerStudioUrl %>" target="_blank" class="btn btn-outline-primary btn-sm shadow-sm d-none d-md-inline-block">
             <i class="bi bi-bar-chart-line me-1"></i> Looker Studio
+        </a>
+        <a href="<%= lookerStudioUrl %>" target="_blank" class="btn btn-outline-primary btn-sm shadow-sm d-md-none" title="Looker Studio">
+            <i class="bi bi-bar-chart-line"></i>
         </a>
         <% } %>
         <% if (googleSheetsUrl) { %>
-        <a href="<%= googleSheetsUrl %>" target="_blank" class="btn btn-outline-success btn-sm shadow-sm">
+        <a href="<%= googleSheetsUrl %>" target="_blank" class="btn btn-outline-success btn-sm shadow-sm d-none d-md-inline-block">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Planilha Base
+        </a>
+        <a href="<%= googleSheetsUrl %>" target="_blank" class="btn btn-outline-success btn-sm shadow-sm d-md-none" title="Planilha Base">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
         </a>
         <% } %>
         <a href="/tarefas/nova" class="btn btn-potiguar btn-sm shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+            <i class="bi bi-plus-lg me-1"></i> <span class="d-none d-md-inline">Nova Tarefa</span><span class="d-md-none">Nova</span>
         </a>
     </div>
 </div>
@@ -117,11 +123,11 @@
 <div class="card shadow-sm border-0 mb-3">
     <div class="card-body p-3">
         <div class="row g-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
                 <label class="form-label small fw-bold text-muted mb-1">BUSCAR TÍTULO</label>
                 <input type="text" id="filterSearch" class="form-control form-control-sm" placeholder="Digite para buscar...">
             </div>
-            <div class="col-md-2">
+            <div class="col-12 col-md-2">
                 <label class="form-label small fw-bold text-muted mb-1">STATUS</label>
                 <select id="filterStatus" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -131,7 +137,7 @@
                     <option value="ATRASADA">Atrasada</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-12 col-md-2">
                 <label class="form-label small fw-bold text-muted mb-1">COMPLEXIDADE</label>
                 <select id="filterComplexidade" class="form-select form-select-sm">
                     <option value="">Todas</option>
@@ -140,7 +146,7 @@
                     <option value="ALTA">Alta</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
                 <label class="form-label small fw-bold text-muted mb-1">TIME</label>
                 <select id="filterTime" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -149,7 +155,7 @@
                     <% }) %>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-12 col-md-2">
                 <button id="btnClearFilters" class="btn btn-light btn-sm w-100 text-muted">Limpar Filtros</button>
             </div>
         </div>
