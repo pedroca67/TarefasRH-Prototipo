@@ -31,9 +31,29 @@
                 <label class="form-label fw-bold small text-muted">SENHA</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light border border-end-0"><i class="bi bi-lock text-muted"></i></span>
-                  <input class="form-control bg-light border" type="password" name="senha" placeholder="********" required>
+                  <input class="form-control bg-light border border-start-0 border-end-0" type="password" name="senha" id="senhaInput" placeholder="********" required>
+                  <button class="btn bg-light border border-start-0" type="button" id="togglePassword">
+                    <i class="bi bi-eye text-muted"></i>
+                  </button>
                 </div>
               </div>
+
+              <script>
+                document.getElementById('togglePassword').addEventListener('click', function() {
+                  const senhaInput = document.getElementById('senhaInput');
+                  const icon = this.querySelector('i');
+                  
+                  if (senhaInput.type === 'password') {
+                    senhaInput.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                  } else {
+                    senhaInput.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                  }
+                });
+              </script>
 
               <button type="submit" class="btn btn-potiguar w-100 py-3 fw-bold shadow-sm">ENTRAR NO SISTEMA</button>
             </form>
