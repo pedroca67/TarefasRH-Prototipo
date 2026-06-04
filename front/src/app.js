@@ -30,15 +30,15 @@ app.use((req, res, next) => {
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
-    resave: false, // Recomendado: false para evitar regravações desnecessárias
-    saveUninitialized: false, // Recomendado: false para conformidade com leis de privacidade e economia de storage
+    resave: true, // Forçar o salvamento da sessão para evitar perda em proxies
+    saveUninitialized: true, // Garantir que a sessão seja criada imediatamente
     proxy: isProduction,
-    name: 'tarefasrh.sid', // Nome personalizado para o cookie
+    name: 'tarefasrh.sid',
     cookie: { 
-        secure: isProduction, // Local (HTTP) = false, Railway (HTTPS) = true
+        secure: isProduction, 
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24, // 24 horas
-        sameSite: 'lax'
+        maxAge: 1000 * 60 * 60 * 24, 
+        sameSite: isProduction ? 'none' : 'lax' // 'none' ajuda com alguns problemas de redirecionamento em proxies HTTPS
     }
 }));
 
