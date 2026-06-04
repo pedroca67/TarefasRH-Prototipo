@@ -266,8 +266,9 @@ app.post('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
         req.session.success = 'Usuário salvo com sucesso!';
         res.redirect('/usuarios');
     } catch (error) {
-        req.session.error = 'Erro ao salvar usuário.';
-        res.status(500).send('Erro ao salvar usuário');
+        console.error('Erro ao salvar usuário:', error.response?.data || error.message);
+        req.session.error = 'Erro ao salvar usuário. Verifique se o e-mail ou código já existem.';
+        res.redirect('/usuarios');
     }
 });
 
