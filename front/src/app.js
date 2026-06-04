@@ -13,9 +13,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Confiar no proxy apenas em produção (importante para sessões no Railway/HTTPS)
+// Confiar no proxy (importante para Vercel/Railway/HTTPS)
 if (isProduction) {
-    app.set('trust proxy', 1);
+    app.set('trust proxy', true); // Vercel recomenda 'true' em vez de 1 para ambientes serverless
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
