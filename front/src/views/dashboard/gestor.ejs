@@ -156,7 +156,7 @@
                 </select>
             </div>
             <div class="col-12 col-md-2">
-                <button id="btnClearFilters" class="btn btn-light btn-sm w-100 text-muted">Limpar Filtros</button>
+                <button id="btnClearFilters" class="btn btn-secondary btn-sm w-100">Limpar Filtros</button>
             </div>
         </div>
     </div>
@@ -309,6 +309,14 @@
         const complex = document.getElementById('filterComplexidade').value;
         const timeId = document.getElementById('filterTime').value;
 
+        // Salvar filtros no localStorage
+        localStorage.setItem('dashboardFilters', JSON.stringify({
+            search: document.getElementById('filterSearch').value,
+            status,
+            complex,
+            timeId
+        }));
+
         filteredTasks = allTasks.filter(t => {
             const matchesSearch = t.titulo.toLowerCase().includes(search);
             const matchesStatus = status === "" || t.status === status;
@@ -320,6 +328,22 @@
         currentPage = 1;
         if (currentSort.column) sortTasks(currentSort.column, true);
         else renderTable();
+    }
+
+    function loadFilters() {
+        const savedFilters = localStorage.getItem('dashboardFilters');
+        if (savedFilters) {
+            const filters = JSON.parse(savedFilters);
+            document.getElementById('filterSearch').value = filters.search || '';
+            document.getElementById('filterStatus').value = filters.status || '';
+            document.getElementById('filterComplexidade').value = filters.complex || '';
+            document.getElementById('filterTime').value = filters.timeId || '';
+            
+            // Aplicar os filtros carregados
+            filterTasks();
+        } else {
+            renderTable();
+        }
     }
 
     function sortTasks(column, keepDirection = false) {
@@ -379,6 +403,7 @@
         document.getElementById('filterStatus').value = '';
         document.getElementById('filterComplexidade').value = '';
         document.getElementById('filterTime').value = '';
+        localStorage.removeItem('dashboardFilters'); // Limpar memória
         filterTasks();
     });
 
@@ -386,8 +411,9 @@
         th.addEventListener('click', () => sortTasks(th.dataset.sort));
     });
 
-    // Initial render
-    renderTable();
+    // Initial render - Agora carregando filtros primeiro
+    loadFilters();
 </script>
 
 <%- include('../partials/footer') %>
+s/footer') %>
