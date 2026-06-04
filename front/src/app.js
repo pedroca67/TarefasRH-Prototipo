@@ -9,6 +9,7 @@ const port = process.env.PORT || 3000;
 // Configurações
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.set('trust proxy', 1); // Confiar no proxy do Railway (importante para sessões)
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,10 +21,14 @@ app.use((req, res, next) => {
 });
 
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'potiguar_secret_fallback',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // Para protótipo local
+    saveUninitialized: false, // Alterado para false para evitar sessões vazias
+    proxy: true,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // true se for produção (HTTPS)
+        maxAge: 1000 * 60 * 60 * 24 // 24 horas
+    }
 }));
 
 // Middleware de Autenticação
