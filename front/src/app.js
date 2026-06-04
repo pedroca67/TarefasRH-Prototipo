@@ -6,10 +6,18 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Identificar ambiente
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Configurações
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.set('trust proxy', 1); // Confiar no proxy do Railway (importante para sessões)
+
+// Confiar no proxy apenas em produção (importante para sessões no Railway/HTTPS)
+if (isProduction) {
+    app.set('trust proxy', 1);
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -22,23 +30,17 @@ app.use((req, res, next) => {
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
-    resave: true, // Forçar o salvamento da sessão
-    saveUninitialized: true, // Forçar a criação da sessão mesmo vazia
-    proxy: true,
+    resave: false, // Recomendado: false para evitar regravações desnecessárias
+    saveUninitialized: false, // Recomendado: false para conformidade com leis de privacidade e economia de storage
+    proxy: isProduction,
     name: 'tarefasrh.sid', // Nome personalizado para o cookie
     cookie: { 
-        secure: true, // Railway sempre usa HTTPS
+        secure: isProduction, // Local (HTTP) = false, Railway (HTTPS) = true
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24, // 24 horas
         sameSite: 'lax'
     }
 }));
-
-// Ajuste para desenvolvimento local (onde não tem HTTPS)
-if (process.env.NODE_ENV !== 'production') {
-    app.set('trust proxy', 0);
-    const sessionConfig = app.get('sessionConfig'); // Isso é só ilustrativo, vamos aplicar direto no middleware acima
-}
 
 // Middleware de Autenticação
 const authMiddleware = (req, res, next) => {
@@ -97,7 +99,7 @@ app.get('/logout', (req, res) => {
         if (err) {
             console.error('Erro ao destruir sessão:', err);
         }
-        res.clearCookie('connect.sid'); // Limpa o cookie da sessão
+        res.clearCookie('tarefasrh.sid'); // Limpa o cookie personalizado da sessão
         res.redirect('/login');
     });
 });
