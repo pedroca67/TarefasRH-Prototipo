@@ -34,7 +34,7 @@ app.use(session({
     saveUninitialized: true, 
     name: 'tarefasrh.sid',
     cookie: { 
-        secure: isProduction, 
+        secure: false, // Desativado temporariamente para garantir que o Vercel não bloqueie o cookie
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
         sameSite: 'lax'
