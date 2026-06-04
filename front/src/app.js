@@ -30,14 +30,14 @@ app.use((req, res, next) => {
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
-    resave: true, 
-    saveUninitialized: true, 
+    resave: true,
+    saveUninitialized: true,
     name: 'tarefasrh.sid',
-    cookie: { 
-        secure: false, // Desativado temporariamente para garantir que o Vercel não bloqueie o cookie
+    cookie: {
+        secure: isProduction,
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
-        sameSite: 'lax'
+        sameSite: isProduction ? 'none' : 'lax'
     }
 }));
 
