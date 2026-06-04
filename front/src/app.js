@@ -13,9 +13,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Confiar no proxy (importante para Vercel/Railway/HTTPS)
+// Confiar no proxy (Vercel/Railway/HTTPS)
 if (isProduction) {
-    app.set('trust proxy', true); // Vercel recomenda 'true' em vez de 1 para ambientes serverless
+    app.set('trust proxy', 1);
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -32,23 +32,14 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
     resave: true, 
     saveUninitialized: true, 
-    proxy: isProduction,
     name: 'tarefasrh.sid',
     cookie: { 
         secure: isProduction, 
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24, 
-        sameSite: isProduction ? 'none' : 'lax'
+        maxAge: 1000 * 60 * 60 * 24,
+        sameSite: 'lax'
     }
 }));
-
-// Debug de Sessão (Remover após resolver)
-app.use((req, res, next) => {
-    if (isProduction) {
-        console.log(`[Session Debug] Path: ${req.path} | ID: ${req.sessionID} | User: ${req.session.usuario ? req.session.usuario.nome : 'Nenhum'}`);
-    }
-    next();
-});
 
 // Middleware de Autenticação
 const authMiddleware = (req, res, next) => {
