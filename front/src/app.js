@@ -21,15 +21,24 @@ app.use((req, res, next) => {
 });
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'potiguar_secret_fallback',
-    resave: false,
-    saveUninitialized: false, // Alterado para false para evitar sessões vazias
+    secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
+    resave: true, // Forçar o salvamento da sessão
+    saveUninitialized: true, // Forçar a criação da sessão mesmo vazia
     proxy: true,
+    name: 'tarefasrh.sid', // Nome personalizado para o cookie
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // true se for produção (HTTPS)
-        maxAge: 1000 * 60 * 60 * 24 // 24 horas
+        secure: true, // Railway sempre usa HTTPS
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24, // 24 horas
+        sameSite: 'lax'
     }
 }));
+
+// Ajuste para desenvolvimento local (onde não tem HTTPS)
+if (process.env.NODE_ENV !== 'production') {
+    app.set('trust proxy', 0);
+    const sessionConfig = app.get('sessionConfig'); // Isso é só ilustrativo, vamos aplicar direto no middleware acima
+}
 
 // Middleware de Autenticação
 const authMiddleware = (req, res, next) => {
