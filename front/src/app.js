@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('auth/login', { error: null });
+    res.render('auth/login', { error: null, email: '' });
 });
 
 app.post('/login', async (req, res) => {
@@ -74,7 +74,7 @@ app.post('/login', async (req, res) => {
         req.session.usuario = response.data;
         res.redirect('/dashboard');
     } catch (error) {
-        res.render('auth/login', { error: 'E-mail ou senha inválidos' });
+        res.render('auth/login', { error: 'E-mail ou senha inválidos', email });
     }
 });
 
