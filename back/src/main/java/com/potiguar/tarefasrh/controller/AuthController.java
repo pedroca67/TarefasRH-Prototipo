@@ -17,7 +17,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        return usuarioRepository.findByEmail(request.getEmail())
+        String identificador = request.getEmail();
+        return usuarioRepository.findByEmailOrCodigoFuncionario(identificador, identificador)
                 .filter(u -> passwordEncoder.matches(request.getSenha(), u.getSenha()))
                 .filter(Usuario::isAtivo)
                 .map(ResponseEntity::ok)
