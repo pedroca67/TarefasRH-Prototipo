@@ -30,17 +30,25 @@ app.use((req, res, next) => {
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
-    resave: true, // Forçar o salvamento da sessão para evitar perda em proxies
-    saveUninitialized: true, // Garantir que a sessão seja criada imediatamente
+    resave: true, 
+    saveUninitialized: true, 
     proxy: isProduction,
     name: 'tarefasrh.sid',
     cookie: { 
         secure: isProduction, 
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24, 
-        sameSite: isProduction ? 'none' : 'lax' // 'none' ajuda com alguns problemas de redirecionamento em proxies HTTPS
+        sameSite: isProduction ? 'none' : 'lax'
     }
 }));
+
+// Debug de Sessão (Remover após resolver)
+app.use((req, res, next) => {
+    if (isProduction) {
+        console.log(`[Session Debug] Path: ${req.path} | ID: ${req.sessionID} | User: ${req.session.usuario ? req.session.usuario.nome : 'Nenhum'}`);
+    }
+    next();
+});
 
 // Middleware de Autenticação
 const authMiddleware = (req, res, next) => {
