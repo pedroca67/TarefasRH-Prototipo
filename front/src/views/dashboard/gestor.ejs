@@ -105,8 +105,8 @@
 </div>
 
 <% const produtividadeWidth = stats.esforco_total > 0 ? Math.round((stats.esforco_concluido / stats.esforco_total) * 100) : 0; %>
-<% const aderenciaTotal = (stats.aderencia_sim || 0) + (stats.aderencia_nao || 0); %>
-<% const aderenciaWidth = aderenciaTotal > 0 ? Math.round(((stats.aderencia_sim || 0) / aderenciaTotal) * 100) : 0; %>
+<% const aderenciaTotal = (stats.aderencia_gestor_sim || 0) + (stats.aderencia_gestor_nao || 0); %>
+<% const aderenciaWidth = aderenciaTotal > 0 ? Math.round(((stats.aderencia_gestor_sim || 0) / aderenciaTotal) * 100) : 0; %>
 
 <div class="collapse mb-2" id="collapseAudit">
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
@@ -120,7 +120,7 @@
                         <%= stats.esforco_total > 0 ? Math.round((stats.esforco_concluido / stats.esforco_total) * 100) : 0 %>%
                     </div>
                     <div class="progress mt-1" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" <%= 'style="width: ' + produtividadeWidth + '%; background-color: #6f42c1;"' %>></div>
+                        <div class="progress-bar" role="progressbar" style="width: <%- produtividadeWidth %>%; background-color: #6f42c1;"></div>
                     </div>
                   </div>
                 </div>
@@ -136,7 +136,7 @@
                     <div class="stat-value text-dark" style="color: #fd7e14 !important;">
                         <%= aderenciaWidth %>%                    </div>
                     <div class="progress mt-1" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" <%= 'style="width: ' + aderenciaWidth + '%; background-color: #fd7e14;"' %>></div>
+                        <div class="progress-bar" role="progressbar" style="width: <%- aderenciaWidth %>%; background-color: #fd7e14;"></div>
                     </div>
                   </div>
                 </div>
@@ -186,6 +186,15 @@
         <i class="bi bi-chevron-down fs-4 transition-transform" id="auditChevron"></i>
     </button>
 </div>
+
+<style>
+    #auditChevron {
+        transition: transform 0.3s ease;
+    }
+    #auditChevron.rotate-180 {
+        transform: rotate(180deg) !important;
+    }
+</style>
 
 <script>
     const collapseAudit = document.getElementById('collapseAudit');
