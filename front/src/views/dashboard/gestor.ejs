@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 <%- include('../partials/navbar') %>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h4 mb-0 fw-bold">Dashboard <span class="badge bg-potiguar fw-normal">Gestor</span></h1>
     <div class="d-flex gap-1 gap-md-2">
         <% if (lookerStudioUrl) { %>
@@ -26,14 +26,15 @@
     </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-3 mb-3">
+<!-- Linha 1: Status de Atividades -->
+<div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-2 mb-3">
   <div class="col">
-    <div class="card stat-card total shadow-sm h-100 py-2">
-      <div class="card-body py-2 px-3">
+    <div class="card stat-card total shadow-sm h-100">
+      <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Total</div>
-            <div class="stat-value text-potiguar"><%= stats.total %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Total</div>
+            <div class="stat-value text-potiguar fw-bold" style="font-size: 2rem;"><%= stats.total %></div>
           </div>
           <div class="col-auto">
             <i class="bi bi-list-task fs-2 text-potiguar opacity-25"></i>
@@ -43,12 +44,12 @@
     </div>
   </div>
   <div class="col">
-    <div class="card stat-card pendente shadow-sm h-100 py-2">
-      <div class="card-body py-2 px-3">
+    <div class="card stat-card pendente shadow-sm h-100">
+      <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Pendentes</div>
-            <div class="stat-value text-warning"><%= stats.pendente %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Pendentes</div>
+            <div class="stat-value text-warning fw-bold" style="font-size: 2rem;"><%= stats.pendente %></div>
           </div>
           <div class="col-auto">
             <i class="bi bi-clock fs-2 text-warning opacity-25"></i>
@@ -58,12 +59,12 @@
     </div>
   </div>
   <div class="col">
-    <div class="card stat-card andamento shadow-sm h-100 py-2">
-      <div class="card-body py-2 px-3">
+    <div class="card stat-card andamento shadow-sm h-100">
+      <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Em Andamento</div>
-            <div class="stat-value text-primary"><%= stats.em_andamento %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Em Andamento</div>
+            <div class="stat-value text-primary fw-bold" style="font-size: 2rem;"><%= stats.em_andamento %></div>
           </div>
           <div class="col-auto">
             <i class="bi bi-play-circle fs-2 text-primary opacity-25"></i>
@@ -73,12 +74,12 @@
     </div>
   </div>
   <div class="col">
-    <div class="card stat-card concluida shadow-sm h-100 py-2">
-      <div class="card-body py-2 px-3">
+    <div class="card stat-card concluida shadow-sm h-100">
+      <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Concluídas</div>
-            <div class="stat-value text-success"><%= stats.concluida %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Concluídas</div>
+            <div class="stat-value text-success fw-bold" style="font-size: 2rem;"><%= stats.concluida %></div>
           </div>
           <div class="col-auto">
             <i class="bi bi-check-circle fs-2 text-success opacity-25"></i>
@@ -88,12 +89,12 @@
     </div>
   </div>
   <div class="col">
-    <div class="card stat-card atrasada shadow-sm h-100 py-2">
-      <div class="card-body py-2 px-3">
+    <div class="card stat-card atrasada shadow-sm h-100">
+      <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Atrasadas</div>
-            <div class="stat-value text-danger"><%= stats.atrasada %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Atrasadas</div>
+            <div class="stat-value text-danger fw-bold" style="font-size: 2rem;"><%= stats.atrasada %></div>
           </div>
           <div class="col-auto">
             <i class="bi bi-exclamation-triangle fs-2 text-danger opacity-25"></i>
@@ -104,118 +105,195 @@
   </div>
 </div>
 
+<!-- Linha 2: Métricas de Performance e Auditoria -->
 <% const produtividadeWidth = stats.esforco_total > 0 ? Math.round((stats.esforco_concluido / stats.esforco_total) * 100) : 0; %>
 <% const aderenciaTotal = (stats.aderencia_gestor_sim || 0) + (stats.aderencia_gestor_nao || 0); %>
 <% const aderenciaWidth = aderenciaTotal > 0 ? Math.round(((stats.aderencia_gestor_sim || 0) / aderenciaTotal) * 100) : 0; %>
 
-<div class="collapse mb-2" id="collapseAudit">
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
-        <div class="col">
-            <div class="card stat-card shadow-sm h-100 py-2" style="border-left: 5px solid #6f42c1;">
-              <div class="card-body py-2 px-3">
-                <div class="row align-items-center g-0">
-                  <div class="col me-2">
-                    <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Produtividade</div>
-                    <div class="stat-value text-dark" style="color: #6f42c1 !important;">
-                        <%= stats.esforco_total > 0 ? Math.round((stats.esforco_concluido / stats.esforco_total) * 100) : 0 %>%
-                    </div>
-                    <div class="progress mt-1" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" style="width: <%- produtividadeWidth %>%; background-color: #6f42c1;"></div>
-                    </div>
-                  </div>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-2 mb-3">
+    <div class="col">
+        <div class="card stat-card shadow-sm h-100" style="border-left: 5px solid #6f42c1;">
+          <div class="card-body p-3">
+            <div class="row align-items-center g-0">
+              <div class="col me-2">
+                <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Produtividade</div>
+                <div class="stat-value text-dark fw-bold" style="color: #6f42c1 !important; font-size: 1.8rem;">
+                    <%= produtividadeWidth %>%
+                </div>
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" role="progressbar" style="width: <%- produtividadeWidth %>% !important; background-color: #6f42c1;"></div>
                 </div>
               </div>
             </div>
+          </div>
         </div>
-        <div class="col">
-            <div class="card stat-card shadow-sm h-100 py-2" style="border-left: 5px solid #fd7e14;">
-              <div class="card-body py-2 px-3">
-                <div class="row align-items-center g-0">
-                  <div class="col me-2">
-                    <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Aderência ao Cargo</div>
-                    <div class="stat-value text-dark" style="color: #fd7e14 !important;">
-                        <%= aderenciaWidth %>%                    </div>
-                    <div class="progress mt-1" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" style="width: <%- aderenciaWidth %>%; background-color: #fd7e14;"></div>
-                    </div>
-                  </div>
+    </div>
+    <div class="col">
+        <div class="card stat-card shadow-sm h-100" style="border-left: 5px solid #fd7e14;">
+          <div class="card-body p-3">
+            <div class="row align-items-center g-0">
+              <div class="col me-2">
+                <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Aderência ao Cargo</div>
+                <div class="stat-value text-dark fw-bold" style="color: #fd7e14 !important; font-size: 1.8rem;">
+                    <%= aderenciaWidth %>%
+                </div>
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar" role="progressbar" style="width: <%- aderenciaWidth %>% !important; background-color: #fd7e14;"></div>
                 </div>
               </div>
             </div>
+          </div>
         </div>
-        <div class="col">
-            <div class="card stat-card shadow-sm h-100 py-2" style="border-left: 5px solid #20c997;">
-              <div class="card-body py-2 px-3">
-                <div class="row align-items-center g-0">
-                  <div class="col me-2">
-                    <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Carga Horária Est.</div>
-                    <div class="stat-value text-dark" style="color: #20c997 !important;">
-                        <%= stats.total_horas_est %>h
-                    </div>
-                    <div class="text-muted small" style="font-size: 0.7rem;">
-                        <%= stats.total_horas_est > 400 ? '+' + (stats.total_horas_est - 400) + 'h extras (base 400h)' : 'Dentro da capacidade' %>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="bi bi-clock-history fs-3 text-success opacity-25"></i>
-                  </div>
+    </div>
+    <div class="col">
+        <div class="card stat-card shadow-sm h-100" style="border-left: 5px solid #20c997;">
+          <div class="card-body p-3">
+            <div class="row align-items-center g-0">
+              <div class="col me-2">
+                <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Carga Horária Est.</div>
+                <div class="stat-value text-dark fw-bold" style="color: #20c997 !important; font-size: 1.8rem;">
+                    <%= stats.total_horas_est %>h
                 </div>
+              </div>
+              <div class="col-auto">
+                <i class="bi bi-clock-history fs-2 text-success opacity-25"></i>
               </div>
             </div>
+          </div>
         </div>
-        <div class="col">
-            <div class="card stat-card total shadow-sm h-100 py-2" style="border-left-color: var(--potiguar-yellow);">
-              <div class="card-body py-2 px-3">
-                <div class="row align-items-center g-0">
-                  <div class="col me-2">
-                    <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Times</div>
-                    <div class="stat-value text-dark"><%= stats.total_times %></div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="bi bi-diagram-3 fs-2 text-dark opacity-25"></i>
-                  </div>
-                </div>
+    </div>
+    <div class="col">
+        <div class="card stat-card total shadow-sm h-100" style="border-left-color: var(--potiguar-yellow);">
+          <div class="card-body p-3">
+            <div class="row align-items-center g-0">
+              <div class="col me-2">
+                <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Times Ativos</div>
+                <div class="stat-value text-dark fw-bold" style="font-size: 1.8rem;"><%= stats.total_times %></div>
               </div>
+              <div class="col-auto">
+                <i class="bi bi-diagram-3 fs-2 text-dark opacity-25"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seções de Monitoramento Expandidas -->
+<div class="row g-3 flex-grow-1">
+    <!-- Coluna: Atenção Prioritária (Atrasadas) -->
+    <div class="col-12 col-xl-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-fire me-2"></i>Atenção Prioritária</h6>
+                <a href="/tarefas" class="btn btn-link btn-sm text-decoration-none p-0 fw-bold">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size: 0.95rem;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-3 py-2">Tarefa</th>
+                                <th class="py-2">Responsáveis</th>
+                                <th class="py-2">Prazo</th>
+                                <th class="text-end pe-3 py-2">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% 
+                                const atrasadasPrioritarias = tarefas
+                                    .filter(t => t.status === 'ATRASADA')
+                                    .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo))
+                                    .slice(0, 5);
+                            %>
+                            <% if (atrasadasPrioritarias.length > 0) { %>
+                                <% atrasadasPrioritarias.forEach(t => { %>
+                                    <tr class="align-middle">
+                                        <td class="ps-3 py-2">
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 300px;"><%= t.titulo %></div>
+                                        </td>
+                                        <td class="py-2">
+                                            <% if (t.responsaveis && t.responsaveis.length > 0) { %>
+                                                <span class="fw-bold"><%= t.responsaveis.slice(0, 2).map(r => r.nome.split(' ')[0]).join(', ') %></span><% if (t.responsaveis.length > 2) { %> <span class="text-muted">+<%= t.responsaveis.length - 2 %></span><% } %>
+                                            <% } else { %>
+                                                <span class="text-muted fw-bold"><%= t.time ? t.time.nome : '-' %></span>
+                                            <% } %>
+                                        </td>
+                                        <td class="py-2"><span class="text-danger fw-bold"><%= new Date(t.dataPrazo).toLocaleDateString('pt-BR') %></span></td>
+                                        <td class="text-end pe-3 py-2">
+                                            <a href="/tarefas/<%= t.id %>" class="btn btn-sm btn-outline-danger py-0 fw-bold">Cobrar</a>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr><td colspan="4" class="text-center py-4 text-muted fw-bold">🎉 Nenhuma tarefa atrasada!</td></tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna: Distribuição por Status (Gráfico Expandido) -->
+    <div class="col-12 col-xl-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-pie-chart me-2"></i>Distribuição de Status</h6>
+            </div>
+            <div class="card-body d-flex flex-column align-items-center justify-content-between py-3">
+                <div style="position: relative; height: 200px; width: 200px;">
+                    <canvas id="statusChart"></canvas>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <div class="fw-bold" style="font-size: 2.2rem; line-height: 1;"><%= stats.total %></div>
+                        <div class="text-muted fw-bold" style="font-size: 0.85rem;">TOTAL</div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 w-100">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #ffc107; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Pendente: <strong><%= stats.pendente %></strong></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #0d6efd; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Em Andamento: <strong><%= stats.em_andamento %></strong></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #198754; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Concluída: <strong><%= stats.concluida %></strong></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #dc3545; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Atrasada: <strong><%= stats.atrasada %></strong></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="d-flex justify-content-center mb-4">
-    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAudit" aria-expanded="false" id="toggleAuditBtn" style="text-decoration: none; outline: none; box-shadow: none;">
-        <i class="bi bi-chevron-down fs-4 transition-transform" id="auditChevron"></i>
-    </button>
-</div>
-
-<style>
-    #auditChevron {
-        transition: transform 0.3s ease;
-    }
-    #auditChevron.rotate-180 {
-        transform: rotate(180deg) !important;
-    }
-</style>
-
 <script>
-    const collapseAudit = document.getElementById('collapseAudit');
-    const auditChevron = document.getElementById('auditChevron');
-    
-    // Carregar estado salvo
-    const auditExpanded = localStorage.getItem('auditExpanded') === 'true';
-    if (auditExpanded) {
-        collapseAudit.classList.add('show');
-        auditChevron.classList.add('rotate-180');
-        document.getElementById('toggleAuditBtn').setAttribute('aria-expanded', 'true');
-    }
-
-    collapseAudit.addEventListener('show.bs.collapse', function () {
-        auditChevron.classList.add('rotate-180');
-        localStorage.setItem('auditExpanded', 'true');
-    });
-
-    collapseAudit.addEventListener('hide.bs.collapse', function () {
-        auditChevron.classList.remove('rotate-180');
-        localStorage.setItem('auditExpanded', 'false');
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendente', 'Em Andamento', 'Concluída', 'Atrasada'],
+                datasets: [{
+                    data: [<%= stats.pendente %>, <%= stats.em_andamento %>, <%= stats.concluida %>, <%= stats.atrasada %>],
+                    backgroundColor: ['#ffc107', '#0d6efd', '#198754', '#dc3545'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                }
+            }
+        });
     });
 </script>
 
