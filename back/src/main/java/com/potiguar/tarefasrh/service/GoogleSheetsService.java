@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +37,12 @@ public class GoogleSheetsService {
     @Value("${google.credentials.path:secrets/google-credentials.json}")
     private String googleCredentialsPath;
 
+    private static final Map<String, Integer> PESO_ESFORCO = Map.of(
+            "BAIXA", 1,
+            "MEDIA", 3,
+            "ALTA", 5
+    );
+
     public void syncAllTasks() {
         if (spreadsheetId.isEmpty()) {
             return;
@@ -47,21 +54,32 @@ public class GoogleSheetsService {
 
             List<List<Object>> values = new ArrayList<>();
             // Cabeçalho
-            values.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Status", "Complexidade", "Prazo", "Evidência"));
+            values.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência"));
             for (Tarefa t : tarefas) {
                 String responsaveis = t.getResponsaveis().stream()
                         .map(com.potiguar.tarefasrh.model.Usuario::getNome)
                         .collect(Collectors.joining(", "));
 
+                int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+
                 values.add(Arrays.asList(
                         t.getId().toString(),
                         t.getTitulo(),
-                        t.getDescricao() != null ? t.getDescricao() : "-",  // 👈 adiciona aqui
+                        t.getDescricao() != null ? t.getDescricao() : "-",
                         responsaveis.isEmpty() ? "-" : responsaveis,
                         t.getTime() != null ? t.getTime().getNome() : "-",
+                        t.getCategoria().toString(),
+                        t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                        t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
+                        t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
+                        t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
+                        t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
                         t.getStatus().toString(),
                         t.getComplexidade().toString(),
+                        esforco,
+                        esforco * 2, // 1pt = 2h
                         t.getDataPrazo().toString(),
+                        t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
                         t.getEvidencia() != null ? t.getEvidencia() : "-"
                 ));
             }

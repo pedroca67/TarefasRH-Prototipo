@@ -21,6 +21,6 @@ module.exports = {
     getTarefas: (responsavelId, timeId) => api.get('/tarefas', { params: { responsavelId, timeId } }),
     getTarefa: (id) => api.get(`/tarefas/${id}`),
     criarTarefa: (tarefa) => api.post('/tarefas', tarefa),
-    atualizarStatus: (id, status, evidencia) => api.put(`/tarefas/${id}/status`, { status, evidencia }),
+    atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     getStats: () => api.get('/tarefas/stats')
 };

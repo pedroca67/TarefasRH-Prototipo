@@ -31,6 +31,27 @@ public class Tarefa {
     private Complexidade complexidade;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private Categoria categoria = Categoria.OUTROS;
+
+    @Column(name = "previsto_no_cargo_gestor")
+    @Builder.Default
+    private Boolean previstoNoCargoGestor = true;
+
+    @Column(name = "previsto_no_cargo_colaborador")
+    private Boolean previstoNoCargoColaborador;
+
+    // Getters customizados para garantir tratamento de nulos
+    public boolean isPrevistoNoCargoGestor() {
+        return previstoNoCargoGestor == null || previstoNoCargoGestor;
+    }
+
+    public Boolean getPrevistoNoCargoColaborador() {
+        return previstoNoCargoColaborador;
+    }
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private Status status = Status.PENDENTE;
@@ -44,6 +65,13 @@ public class Tarefa {
     @Column(name = "data_criacao")
     @Builder.Default
     private LocalDateTime dataCriacao = LocalDateTime.now();
+
+    @Column(name = "data_conclusao")
+    private LocalDateTime dataConclusao;
+
+    @ManyToOne
+    @JoinColumn(name = "concluido_por")
+    private Usuario concluidoPor;
 
     @ManyToOne
     @JoinColumn(name = "criado_por")

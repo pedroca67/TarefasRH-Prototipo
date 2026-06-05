@@ -6,9 +6,15 @@
     --header-height: 60px;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 body {
     background-color: #f4f6f9;
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Sidebar Styling */
@@ -125,10 +131,11 @@ body {
 /* Content Area Styling */
 .main-content {
     margin-left: var(--sidebar-width);
-    min-height: 100vh;
+    flex: 1; /* Ocupa o espaço restante entre o topo e o rodapé */
     display: flex;
     flex-direction: column;
     transition: margin-left 0.3s ease;
+    min-width: 0; /* Evita que o flexbox quebre com tabelas largas */
 }
 
 .main-content.sidebar-collapsed {
@@ -351,6 +358,32 @@ body {
 .bg-potiguar {
     background-color: var(--potiguar-blue) !important;
     color: white !important;
+}
+
+/* Estilos para as tabelas do sistema */
+.table-potiguar thead th {
+    background-color: #f8f9fa !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    border-bottom: 3px solid #dee2e6 !important;
+    color: #495057;
+    vertical-align: middle;
+}
+
+/* Efeito Zebra - Aplicado direto nos TD para vencer o Bootstrap */
+.table-potiguar tbody tr:nth-of-type(odd) > td {
+    background-color: #f8f9fa !important;
+}
+
+.table-potiguar tbody tr:nth-of-type(even) > td {
+    background-color: #ffffff !important;
+}
+
+/* Efeito Hover */
+.table-potiguar tbody tr:hover > td {
+    background-color: #e9ecef !important;
 }
 
 .text-potiguar-yellow {

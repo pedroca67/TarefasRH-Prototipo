@@ -185,7 +185,7 @@
           </div>
 
           <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-bold">Complexidade</label>
               <select class="form-select" name="complexidade">
                 <option value="BAIXA">Baixa</option>
@@ -193,11 +193,52 @@
                 <option value="ALTA">Alta</option>
               </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Categoria</label>
+              <select class="form-select" name="categoria" required>
+                <option value="RECRUTAMENTO_E_SELECAO">Recrutamento e Seleção</option>
+                <option value="DEPARTAMENTO_PESSOAL">Departamento Pessoal</option>
+                <option value="TREINAMENTO_E_DESENVOLVIMENTO">Treinamento e Desenvolvimento</option>
+                <option value="CARGOS_E_SALARIOS">Cargos e Salários</option>
+                <option value="BENEFICIOS">Benefícios</option>
+                <option value="ENDOMARKETING">Endomarketing</option>
+                <option value="SAUDE_E_SEGURANCA">Saúde e Segurança</option>
+                <option value="OUTROS" selected>Outros</option>
+              </select>
+            </div>
+            <div class="col-md-4">
               <label class="form-label fw-bold">Prazo</label>
               <input class="form-control" type="date" name="dataPrazo" required>
             </div>
           </div>
+
+          <div class="row mb-3">
+            <div class="col-12">
+              <div class="form-check form-switch p-3 bg-light rounded border d-flex align-items-center justify-content-between">
+                <div>
+                  <label class="form-check-label fw-bold text-potiguar mb-0" for="previstoNoCargoGestor">Atividade prevista no cargo?</label>
+                  <p class="text-muted small mb-0">Esta é a sua expectativa inicial sobre a função do responsável.</p>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                  <span id="previstoLabelGestor" class="fw-bold text-success" style="min-width: 35px; text-align: right;">Sim</span>
+                  <input class="form-check-input ms-0" type="checkbox" name="previstoNoCargoGestor" id="previstoNoCargoGestor" checked style="width: 3.5em; height: 1.75em; cursor: pointer;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            document.getElementById('previstoNoCargoGestor').addEventListener('change', function() {
+              const label = document.getElementById('previstoLabelGestor');
+              if (this.checked) {
+                label.innerText = 'Sim';
+                label.className = 'fw-bold text-success';
+              } else {
+                label.innerText = 'Não';
+                label.className = 'fw-bold text-danger';
+              }
+            });
+          </script>
 
           <div class="row mb-2">
             <div class="col-md-6">

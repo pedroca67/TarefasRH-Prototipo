@@ -24,7 +24,7 @@
           </div>
 
           <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-bold">Complexidade</label>
               <select class="form-select" name="complexidade">
                 <option value="BAIXA">Baixa</option>
@@ -32,9 +32,37 @@
                 <option value="ALTA">Alta</option>
               </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Categoria</label>
+              <select class="form-select" name="categoria" required>
+                <option value="RECRUTAMENTO_E_SELECAO">Recrutamento e Seleção</option>
+                <option value="DEPARTAMENTO_PESSOAL">Departamento Pessoal</option>
+                <option value="TREINAMENTO_E_DESENVOLVIMENTO">Treinamento e Desenvolvimento</option>
+                <option value="CARGOS_E_SALARIOS">Cargos e Salários</option>
+                <option value="BENEFICIOS">Benefícios</option>
+                <option value="ENDOMARKETING">Endomarketing</option>
+                <option value="SAUDE_E_SEGURANCA">Saúde e Segurança</option>
+                <option value="OUTROS" selected>Outros</option>
+              </select>
+            </div>
+            <div class="col-md-4">
               <label class="form-label fw-bold">Prazo</label>
               <input class="form-control" type="date" name="dataPrazo" required>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="p-3 bg-light rounded border">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-shield-check text-potiguar fs-4 me-3"></i>
+                  <div>
+                    <label class="form-label fw-bold text-potiguar mb-0">Auditoria de Processos</label>
+                    <p class="text-muted small mb-0">Ao concluir esta tarefa, você confirmará se ela faz parte das suas atribuições oficiais.</p>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" name="previstoNoCargo" value="true">
             </div>
           </div>
 

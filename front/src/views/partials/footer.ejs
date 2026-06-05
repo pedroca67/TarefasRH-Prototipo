@@ -1,9 +1,10 @@
-</main>
-<footer class="bg-white border-top mt-auto py-4">
-  <div class="container text-center text-muted">
-    <small>&copy; 2026 <strong>TarefasRH Potiguar</strong> - Protótipo de RH</small>
-  </div>
-</footer>
+  </div> <!-- fecha content-body -->
+  <footer class="bg-white border-top mt-auto py-4">
+    <div class="container text-center text-muted">
+      <small>&copy; 2026 <strong>TarefasRH Potiguar</strong> - Protótipo de RH</small>
+    </div>
+  </footer>
+</div> <!-- fecha main-content -->
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -99,7 +100,9 @@
         
         if (totalPages <= 1) return;
 
-        let currentPage = 1;
+        // Recuperar página salva para esta tabela específica
+        let currentPage = parseInt(localStorage.getItem(`pag_${tableId}`) || '1');
+        if (currentPage > totalPages) currentPage = 1;
 
         // Criar container de paginação se não existir
         let paginationContainer = table.nextElementSibling;
@@ -111,6 +114,8 @@
 
         function showPage(page) {
             currentPage = page;
+            localStorage.setItem(`pag_${tableId}`, page); // Salvar progresso
+            
             const start = (page - 1) * itemsPerPage;
             const end = start + itemsPerPage;
 
@@ -130,7 +135,7 @@
             // Anterior
             const liPrev = document.createElement('li');
             liPrev.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-            liPrev.innerHTML = `<a class="page-link" href="#"><i class="bi bi-chevron-left"></i></a>`;
+            liPrev.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault()"><i class="bi bi-chevron-left"></i></a>`;
             liPrev.onclick = (e) => { e.preventDefault(); if (currentPage > 1) showPage(currentPage - 1); };
             ul.appendChild(liPrev);
 
@@ -138,7 +143,7 @@
             for (let i = 1; i <= totalPages; i++) {
                 const li = document.createElement('li');
                 li.className = `page-item ${currentPage === i ? 'active' : ''}`;
-                li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                li.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault()">${i}</a>`;
                 li.onclick = (e) => { e.preventDefault(); showPage(i); };
                 ul.appendChild(li);
             }
@@ -146,7 +151,7 @@
             // Próximo
             const liNext = document.createElement('li');
             liNext.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-            liNext.innerHTML = `<a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>`;
+            liNext.innerHTML = `<a class="page-link" href="#" onclick="event.preventDefault()"><i class="bi bi-chevron-right"></i></a>`;
             liNext.onclick = (e) => { e.preventDefault(); if (currentPage < totalPages) showPage(currentPage + 1); };
             ul.appendChild(liNext);
 
@@ -154,7 +159,21 @@
             paginationContainer.appendChild(nav);
         }
 
-        showPage(1);
+        // Adicionar listener nos links de detalhes dentro da tabela para salvar scroll
+        tbody.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                sessionStorage.setItem(`scroll_${window.location.pathname}`, window.scrollY);
+            });
+        });
+
+        showPage(currentPage);
+
+        // Restaurar scroll se houver
+        const savedScroll = sessionStorage.getItem(`scroll_${window.location.pathname}`);
+        if (savedScroll) {
+            window.scrollTo(0, parseInt(savedScroll));
+            sessionStorage.removeItem(`scroll_${window.location.pathname}`);
+        }
     }
 </script>
 </body>

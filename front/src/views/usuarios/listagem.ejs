@@ -47,7 +47,10 @@
                 <a href="/usuarios/<%= u.id %>" class="btn btn-sm btn-outline-primary py-0 me-1">
                   <i class="bi bi-eye"></i> Detalhes
                 </a>
-                <form action="/usuarios/<%= u.id %>/toggle" method="POST" class="d-inline" onsubmit="return confirmarAcao(event, '<%= u.ativo ? 'Desativar' : 'Ativar' %> Usuário?', 'Deseja realmente <%= u.ativo ? 'desativar' : 'ativar' %> o acesso deste colaborador?')">
+                <form action="/usuarios/<%= u.id %>/toggle" method="POST" class="d-inline" 
+                      data-confirm-title="<%= u.ativo ? 'Desativar' : 'Ativar' %> Usuário?"
+                      data-confirm-text="Deseja realmente <%= u.ativo ? 'desativar' : 'ativar' %> o acesso deste colaborador?"
+                      onsubmit="return confirmarAcao(event, this.dataset.confirmTitle, this.dataset.confirmText)">
                   <button class="btn btn-sm <%= u.ativo ? 'btn-outline-warning' : 'btn-outline-success' %> py-0">
                     <%= u.ativo ? 'Desativar' : 'Ativar' %>
                   </button>

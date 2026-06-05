@@ -144,13 +144,11 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
 app.get('/tarefas', authMiddleware, async (req, res) => {
     try {
-        if (req.session.usuario.nivel === 'GESTOR') {
-            res.redirect('/dashboard');
-        } else {
-            res.redirect('/dashboard'); // Colaborador agora tem tudo no dashboard
-        }
+        const tarefas = (await apiService.getTarefas()).data;
+        const times = (await apiService.getTimes()).data;
+        res.render('tarefas/listagem', { tarefas, times, currentPage: 'tarefas' });
     } catch (error) {
-        res.status(500).send('Erro ao redirecionar tarefas');
+        res.status(500).send('Erro ao carregar lista de tarefas');
     }
 });
 
@@ -171,19 +169,22 @@ app.get('/tarefas/nova', authMiddleware, async (req, res) => {
 
 app.post('/tarefas', authMiddleware, async (req, res) => {
     try {
-        const { titulo, descricao, complexidade, dataPrazo, responsavelId, timeId } = req.body;
+        const { titulo, descricao, complexidade, dataPrazo, responsavelId, timeId, previstoNoCargoGestor, categoria } = req.body;
         const payload = {
             titulo,
             descricao,
             complexidade,
             dataPrazo,
+            previstoNoCargoGestor: previstoNoCargoGestor === 'on' || previstoNoCargoGestor === true || previstoNoCargoGestor === 'true',
+            categoria: categoria || 'OUTROS',
             criadoPor: { id: req.session.usuario.id }
         };
 
         if (req.session.usuario.nivel === 'COLABORADOR') {
             // Força auto-atribuição para colaborador
             payload.responsaveis = [{ id: req.session.usuario.id }];
-            payload.time = null;
+            payload.time = req.session.usuario.time ? { id: req.session.usuario.time.id } : null;
+            payload.categoria = req.body.categoria || 'OUTROS';
         } else {
             if (Array.isArray(responsavelId)) {
                 payload.responsaveis = responsavelId.map(id => ({ id: parseInt(id) }));
@@ -193,6 +194,7 @@ app.post('/tarefas', authMiddleware, async (req, res) => {
                 payload.responsaveis = [];
             }
             payload.time = timeId ? { id: parseInt(timeId) } : null;
+            payload.categoria = req.body.categoria || 'OUTROS';
         }
 
         await apiService.criarTarefa(payload);
@@ -243,8 +245,9 @@ app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
             return res.redirect('/dashboard');
         }
 
-        const { status, evidencia } = req.body;
-        await apiService.atualizarStatus(req.params.id, status, evidencia);
+        const { status, evidencia, previstoNoCargoColaborador } = req.body;
+        const concluidoPorId = req.session.usuario.id;
+        await apiService.atualizarStatus(req.params.id, status, evidencia, previstoNoCargoColaborador, concluidoPorId);
         req.session.success = 'Status da tarefa atualizado com sucesso!';
         res.redirect('/dashboard');
     } catch (error) {
@@ -296,6 +299,17 @@ app.post('/usuarios/:id/toggle', authMiddleware, gestorMiddleware, async (req, r
         req.session.error = 'Erro ao alterar status do usuário.';
         res.status(500).send('Erro ao alterar status do usuário');
     }
+});
+
+// Tratamento de 404 (Página não encontrada) - Deve ser a última rota
+app.use((req, res) => {
+    res.status(404).render('errors/404');
+});
+
+// Tratamento de 500 (Erro interno)
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Algo deu errado! Tente novamente mais tarde.');
 });
 
 app.listen(port, () => {

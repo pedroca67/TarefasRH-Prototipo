@@ -1,27 +1,41 @@
+<div id="ejs-alerts-data" 
+     data-success="<%= typeof success !== 'undefined' && success ? success : '' %>" 
+     data-error="<%= typeof error !== 'undefined' && error ? error : '' %>"
+     style="display: none;">
+</div>
+
 <script>
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
+    document.addEventListener('DOMContentLoaded', function() {
+        const alertsData = document.getElementById('ejs-alerts-data');
+        if (!alertsData) return;
+
+        const successMsg = alertsData.dataset.success;
+        const errorMsg = alertsData.dataset.error;
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+
+        if (successMsg) {
+            Toast.fire({
+                icon: 'success',
+                title: successMsg
+            });
+        }
+
+        if (errorMsg) {
+            Toast.fire({
+                icon: 'error',
+                title: errorMsg
+            });
         }
     });
-
-    <% if (success) { %>
-        Toast.fire({
-            icon: 'success',
-            title: '<%= success %>'
-        });
-    <% } %>
-
-    <% if (error) { %>
-        Toast.fire({
-            icon: 'error',
-            title: '<%= error %>'
-        });
-    <% } %>
 </script>

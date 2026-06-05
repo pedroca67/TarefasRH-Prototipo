@@ -1,0 +1,12 @@
+package com.potiguar.tarefasrh.model;
+
+public enum Categoria {
+    RECRUTAMENTO_E_SELECAO,
+    DEPARTAMENTO_PESSOAL,
+    TREINAMENTO_E_DESENVOLVIMENTO,
+    CARGOS_E_SALARIOS,
+    BENEFICIOS,
+    ENDOMARKETING,
+    SAUDE_E_SEGURANCA,
+    OUTROS
+}
