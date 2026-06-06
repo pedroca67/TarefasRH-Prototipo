@@ -20,8 +20,8 @@ INSERT INTO time (id, nome) VALUES
 (1, 'Recrutamento e Seleção'), (2, 'Departamento Pessoal'), 
 (3, 'Treinamento e Desenvolvimento'), (4, 'Benefícios');
 -- 2. GESTOR (Admitido em Jan/2024) - Senha: admin123
-INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao) VALUES 
-(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.TVuHOn2', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00');
+INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao, codigo_funcionario) VALUES 
+(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.TVuHOn2', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
 
 -- 2. PROCEDURE COLABORADORES
 DROP PROCEDURE IF EXISTS GerarColaboradoresMassivo;
@@ -33,6 +33,7 @@ BEGIN
     DECLARE r_loja VARCHAR(50);
     DECLARE r_ativo TINYINT(1);
     DECLARE r_data_admissao DATETIME;
+    DECLARE start_code INT DEFAULT 1000;
 
     WHILE i < qtd DO
         SET r_time = FLOOR(1 + (RAND() * 4));
@@ -40,7 +41,7 @@ BEGIN
         SET r_data_admissao = DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 600) DAY);
         SET r_ativo = IF(RAND() > 0.1, 1, 0); 
 
-        INSERT INTO usuario (nome, email, senha, nivel, loja, time_id, foto_url, ativo, data_criacao, data_desativacao)
+        INSERT INTO usuario (nome, email, senha, nivel, loja, time_id, foto_url, ativo, data_criacao, data_desativacao, codigo_funcionario)
         VALUES (
             CONCAT('Colaborador ', i+2),
             CONCAT('user', i+2, '@potiguar.com.br'),
@@ -51,7 +52,8 @@ BEGIN
             CONCAT('https://api.dicebear.com/7.x/avataaars/svg?seed=User', i+2),
             r_ativo,
             r_data_admissao,
-            IF(r_ativo = 0, DATE_ADD(r_data_admissao, INTERVAL FLOOR(RAND() * 120) DAY), NULL)
+            IF(r_ativo = 0, DATE_ADD(r_data_admissao, INTERVAL FLOOR(RAND() * 120) DAY), NULL),
+            CAST(start_code + i AS CHAR)
         );
         SET i = i + 1;
     END WHILE;

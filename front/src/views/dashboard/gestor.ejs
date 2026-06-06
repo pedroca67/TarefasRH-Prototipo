@@ -280,10 +280,10 @@
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">
                                         <%= user.nome %>
-                                        <% if (user.pontos >= 50) { %>
-                                            <i class="bi bi-patch-check-fill ms-1" style="color: #ffd700;" title="Medalha de Ouro (50+ pts)"></i>
-                                        <% } else if (user.pontos >= 30) { %>
-                                            <i class="bi bi-patch-check-fill ms-1" style="color: #c0c0c0;" title="Medalha de Prata (30+ pts)"></i>
+                                        <% if (user.pontos >= 45) { %>
+                                            <i class="bi bi-patch-check-fill ms-1" style="color: #ffd700;" title="Medalha de Ouro (45+ pts)"></i>
+                                        <% } else if (user.pontos >= 25) { %>
+                                            <i class="bi bi-patch-check-fill ms-1" style="color: #c0c0c0;" title="Medalha de Prata (25+ pts)"></i>
                                         <% } else if (user.pontos >= 10) { %>
                                             <i class="bi bi-patch-check-fill ms-1" style="color: #cd7f32;" title="Medalha de Bronze (10+ pts)"></i>
                                         <% } %>
