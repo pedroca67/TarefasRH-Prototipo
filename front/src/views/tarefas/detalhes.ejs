@@ -114,31 +114,45 @@
           </div>
         <% } %>
 
-        <% if (tarefa.feedbackGestor) { %>
-          <div class="card border-warning mt-4 shadow-sm" style="background-color: #fffdf0;">
-            <div class="card-body">
-              <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-quote me-2 text-warning"></i>Feedback do Gestor</h6>
-              <p class="mb-0 text-secondary" style="font-style: italic;">"<%= tarefa.feedbackGestor %>"</p>
-              <% if (tarefa.dataFeedback) { %>
-                <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
-                    <i class="bi bi-clock me-1"></i> Recebido em: <%= new Date(tarefa.dataFeedback).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %>
-                </small>
+        <% if (tarefa.status === 'CONCLUIDA') { %>
+          <div class="mt-4">
+            <h6 class="fw-bold text-potiguar border-bottom pb-2 mb-3">
+              <i class="bi bi-chat-left-quote me-2"></i>Histórico de Feedbacks
+            </h6>
+            
+            <div class="feedback-list-container mb-3" style="max-height: 250px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+              <% if (feedbacks && feedbacks.length > 0) { %>
+                <% feedbacks.forEach(fb => { %>
+                  <div class="card mb-2 border-0 shadow-xs" style="background-color: #fffdf0; border-left: 4px solid #ffc107 !important;">
+                    <div class="card-body py-2 px-3">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-dark small">Feedback de <%= fb.gestor.nome %></span>
+                        <small class="text-muted" style="font-size: 0.7rem;">
+                          <i class="bi bi-clock me-1"></i><%= new Date(fb.dataCriacao).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %>
+                        </small>
+                      </div>
+                      <p class="mb-0 text-secondary small" style="font-style: italic;">"<%= fb.mensagem %>"</p>
+                    </div>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="text-center py-3 text-muted small">Nenhum feedback registrado ainda.</div>
               <% } %>
             </div>
-          </div>
-        <% } %>
 
-        <% if (usuario.nivel === 'GESTOR' && tarefa.status === 'CONCLUIDA' && !tarefa.feedbackGestor) { %>
-          <div class="card bg-light border-0 mt-4 shadow-sm">
-            <div class="card-body">
-              <h6 class="fw-bold text-potiguar mb-3"><i class="bi bi-patch-check me-2"></i>Avaliar Conclusão (Feedback)</h6>
-              <form action="/tarefas/<%= tarefa.id %>/feedback" method="POST">
-                <div class="mb-3">
-                  <textarea class="form-control" name="feedback" rows="2" placeholder="Escreva um feedback construtivo sobre a entrega..." required></textarea>
+            <% if (usuario.nivel === 'GESTOR') { %>
+              <div class="card bg-white border border-potiguar border-opacity-25 shadow-sm mt-3">
+                <div class="card-body p-3">
+                  <h6 class="fw-bold text-potiguar mb-2 small"><i class="bi bi-patch-plus me-2"></i>Novo Feedback</h6>
+                  <form action="/tarefas/<%= tarefa.id %>/feedback" method="POST">
+                    <div class="input-group">
+                      <textarea class="form-control form-control-sm" name="feedback" rows="2" placeholder="Escreva um feedback construtivo..." required></textarea>
+                      <button type="submit" class="btn btn-sm btn-potiguar px-4 fw-bold">Enviar</button>
+                    </div>
+                  </form>
                 </div>
-                <button type="submit" class="btn btn-sm btn-potiguar fw-bold px-4">Enviar Feedback</button>
-              </form>
-            </div>
+              </div>
+            <% } %>
           </div>
         <% } %>
 

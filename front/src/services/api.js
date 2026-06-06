@@ -22,10 +22,12 @@ module.exports = {
     getTarefa: (id) => api.get(`/tarefas/${id}`),
     criarTarefa: (tarefa) => api.post('/tarefas', tarefa),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
-    enviarFeedback: (id, feedback) => api.put(`/tarefas/${id}/feedback`, { feedback }),
+    enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),
+    getFeedbacks: (id) => api.get(`/tarefas/${id}/feedbacks`),
     
     // Notificações
     getUnreadNotificationsCount: (usuarioId) => api.get('/notificacoes/unread-count', { params: { usuarioId } }),
+    getNotificacoes: (usuarioId) => api.get('/notificacoes', { params: { usuarioId } }),
     marcarNotificacoesComoLidas: (taskId, usuarioId) => api.patch(`/notificacoes/read-by-task/${taskId}`, null, { params: { usuarioId } }),
     
     getStats: () => api.get('/tarefas/stats')

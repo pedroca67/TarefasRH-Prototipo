@@ -4,9 +4,11 @@ import com.potiguar.tarefasrh.model.Status;
 import com.potiguar.tarefasrh.model.Tarefa;
 import com.potiguar.tarefasrh.model.Usuario;
 import com.potiguar.tarefasrh.model.Time;
+import com.potiguar.tarefasrh.model.Feedback;
 import com.potiguar.tarefasrh.repository.TarefaRepository;
 import com.potiguar.tarefasrh.repository.UsuarioRepository;
 import com.potiguar.tarefasrh.repository.TimeRepository;
+import com.potiguar.tarefasrh.repository.FeedbackRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ public class TarefaController {
     private final TarefaRepository tarefaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TimeRepository timeRepository;
+    private final FeedbackRepository feedbackRepository;
     private final com.potiguar.tarefasrh.repository.NotificacaoRepository notificacaoRepository;
     private final com.potiguar.tarefasrh.service.GoogleSheetsService googleSheetsService;
 
@@ -131,44 +134,67 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}/feedback")
+    @PostMapping("/{id}/feedback")
     @Transactional
-    public ResponseEntity<Tarefa> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return tarefaRepository.findById(id).map(t -> {
-            t.setFeedbackGestor(body.get("feedback"));
-            t.setDataFeedback(LocalDateTime.now());
-            Tarefa salva = tarefaRepository.save(t);
+    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            return tarefaRepository.findById(id).map(t -> {
+                Object gestorIdObj = body.get("gestorId");
+                if (gestorIdObj == null) {
+                    return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
+                }
+                
+                Long gestorId = Long.valueOf(gestorIdObj.toString());
+                Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
+                
+                Feedback novoFeedback = Feedback.builder()
+                        .tarefa(t)
+                        .gestor(gestor)
+                        .mensagem(body.get("feedback").toString())
+                        .build();
+                
+                Feedback salvo = feedbackRepository.save(novoFeedback);
 
-            // Gerar Notificações
-            String msg = "O gestor deixou um feedback na tarefa: " + t.getTitulo();
-            
-            // Notifica todos os responsáveis
-            t.getResponsaveis().forEach(u -> {
-                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
-                        .tipo("FEEDBACK")
-                        .mensagem(msg)
-                        .usuario(u)
-                        .referenciaId(t.getId())
-                        .build());
-            });
+                // Gerar Notificações
+                String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
+                
+                // Notifica todos os responsáveis
+                t.getResponsaveis().forEach(u -> {
+                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
+                            .tipo("FEEDBACK")
+                            .mensagem(msg)
+                            .usuario(u)
+                            .referenciaId(t.getId())
+                            .build());
+                });
 
-            // Se for time, notifica todos do time
-            if (t.getTime() != null) {
-                usuarioRepository.findAll().stream()
-                        .filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
-                        .forEach(u -> {
-                            notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
-                                    .tipo("FEEDBACK")
-                                    .mensagem(msg)
-                                    .usuario(u)
-                                    .referenciaId(t.getId())
-                                    .build());
-                        });
-            }
+                // Se for time, notifica todos do time
+                if (t.getTime() != null) {
+                    usuarioRepository.findAll().stream()
+                            .filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
+                            .forEach(u -> {
+                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
+                                        .tipo("FEEDBACK")
+                                        .mensagem(msg)
+                                        .usuario(u)
+                                        .referenciaId(t.getId())
+                                        .build());
+                            });
+                }
 
-            googleSheetsService.syncAllTasks();
-            return ResponseEntity.ok(salva);
-        }).orElse(ResponseEntity.notFound().build());
+                googleSheetsService.syncAllTasks();
+                return ResponseEntity.ok(salvo);
+            }).orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro ao salvar feedback: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/feedbacks")
+    public List<Feedback> listarFeedbacks(@PathVariable Long id) {
+        Tarefa t = tarefaRepository.findById(id).orElseThrow();
+        return feedbackRepository.findByTarefaOrderByDataCriacaoDesc(t);
     }
 
     @GetMapping("/stats")

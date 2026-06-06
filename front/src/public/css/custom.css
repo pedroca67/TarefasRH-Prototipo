@@ -398,3 +398,108 @@ body {
 .rotate-180 {
     transform: rotate(180deg);
 }
+
+/* Notificações no Header */
+.notification-bell-wrapper {
+    position: relative;
+    cursor: pointer;
+    margin-right: 1.5rem;
+    color: #6c757d;
+    transition: color 0.2s;
+}
+
+.notification-bell-wrapper:hover {
+    color: var(--potiguar-blue);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: var(--potiguar-red);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px;
+    border: 2px solid white;
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-top: 15px;
+    z-index: 1100;
+    overflow: hidden;
+    display: none;
+}
+
+.notification-dropdown.show {
+    display: block;
+    animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.notification-header {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--potiguar-blue);
+}
+
+.notification-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f1f1;
+    text-decoration: none;
+    display: block;
+    transition: background 0.2s;
+}
+
+.notification-item:hover {
+    background: #f7faff;
+}
+
+.notification-item.unread {
+    background-color: #fff9f9;
+}
+
+.notification-item.unread:hover {
+    background-color: #fff2f2;
+}
+
+.notification-msg {
+    font-size: 0.85rem;
+    color: #333;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    display: block;
+}
+
+.notification-time {
+    font-size: 0.7rem;
+    color: #999;
+}
+
+.notification-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #adb5bd;
+    font-size: 0.85rem;
+}

@@ -69,11 +69,9 @@ public class Tarefa {
     @Column(name = "data_conclusao")
     private LocalDateTime dataConclusao;
 
-    @Column(columnDefinition = "TEXT")
-    private String feedbackGestor;
-
-    @Column(name = "data_feedback")
-    private LocalDateTime dataFeedback;
+    @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Feedback> feedbacks = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "concluido_por")

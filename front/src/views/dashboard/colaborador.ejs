@@ -13,7 +13,7 @@
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Total Atribuídas</div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Minhas Atribuições</div>
             <div class="stat-value text-potiguar"><%= minhasTarefas.length %></div>
           </div>
           <div class="col-auto">
@@ -28,9 +28,9 @@
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Pendentes</div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Minhas Pendências</div>
             <div class="stat-value text-warning">
-                <%= minhasTarefas.filter(t => t.status === 'PENDENTE' || t.status === 'EM_ANDAMENTO' || t.status === 'ATRASADA').length %>
+                <%= minhasTarefas.filter(t => t.status !== 'CONCLUIDA').length %>
             </div>
           </div>
           <div class="col-auto">
@@ -45,7 +45,7 @@
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Concluídas</div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Minhas Concluídas</div>
             <div class="stat-value text-success">
                 <%= minhasTarefas.filter(t => t.status === 'CONCLUIDA').length %>
             </div>
@@ -66,7 +66,7 @@
             <div class="col-md-8">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="liveSearch" class="form-control border-start-0" placeholder="Filtrar tarefas nesta página...">
+                    <input type="text" id="liveSearch" class="form-control border-start-0" placeholder="Filtrar tarefas por título...">
                 </div>
             </div>
             <div class="col-md-4">
@@ -102,36 +102,23 @@
           <table class="table table-hover mb-0 table-compact table-potiguar" id="tableMine">
             <thead class="bg-light">
               <tr>
-                <th class="ps-3 border-0">Título</th>
-                <th class="border-0">Prazo</th>
-                <th class="border-0">Complexidade</th>
-                <th class="border-0 text-center">Status</th>
+                <th class="ps-3 border-0 cursor-pointer" data-sort="titulo" data-table="mine">
+                    Título <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
+                <th class="border-0 cursor-pointer" data-sort="prazo" data-table="mine">
+                    Prazo <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
+                <th class="border-0 cursor-pointer" data-sort="complexidade" data-table="mine">
+                    Complexidade <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
+                <th class="border-0 text-center cursor-pointer" data-sort="status" data-table="mine">
+                    Status <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
                 <th class="text-end pe-3 border-0">Ações</th>
               </tr>
             </thead>
-            <tbody>
-              <% minhasTarefas.forEach(tarefa => { %>
-                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>" data-status="<%= tarefa.status %>" data-titulo="<%= tarefa.titulo.toLowerCase() %>">
-                  <td class="ps-3 fw-bold"><%= tarefa.titulo %></td>
-                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
-                  <td>
-                    <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
-                      <%= tarefa.complexidade %>
-                    </span>
-                  </td>
-                  <td class="text-center">
-                    <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
-                      <%= tarefa.status.replace('_', ' ') %>
-                    </span>
-                  </td>
-                  <td class="text-end pe-3">
-                    <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
-                  </td>
-                </tr>
-              <% }) %>
-              <% if (minhasTarefas.length === 0) { %>
-                <tr><td colspan="5" class="text-center py-4 text-muted small">Nenhuma tarefa atribuída a você.</td></tr>
-              <% } %>
+            <tbody id="bodyMine">
+              <!-- Renderizado via JS -->
             </tbody>
           </table>
         </div>
@@ -143,44 +130,24 @@
           <table class="table table-hover mb-0 table-compact table-potiguar" id="tableTeam">
             <thead class="bg-light">
               <tr>
-                <th class="ps-3 border-0">Título</th>
+                <th class="ps-3 border-0 cursor-pointer" data-sort="titulo" data-table="team">
+                    Título <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
                 <th class="border-0">Responsável</th>
-                <th class="border-0">Prazo</th>
-                <th class="border-0">Complexidade</th>
-                <th class="border-0 text-center">Status</th>
+                <th class="border-0 cursor-pointer" data-sort="prazo" data-table="team">
+                    Prazo <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
+                <th class="border-0 cursor-pointer" data-sort="complexidade" data-table="team">
+                    Complexidade <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
+                <th class="border-0 text-center cursor-pointer" data-sort="status" data-table="team">
+                    Status <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
+                </th>
                 <th class="text-end pe-3 border-0">Ações</th>
               </tr>
             </thead>
-            <tbody>
-              <% todasTarefas.forEach(tarefa => { %>
-                <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>" data-status="<%= tarefa.status %>" data-titulo="<%= tarefa.titulo.toLowerCase() %>">
-                  <td class="ps-3 fw-bold text-muted"><%= tarefa.titulo %></td>
-                  <td>
-                    <% if (tarefa.responsaveis && tarefa.responsaveis.length > 0) { %>
-                      <%= tarefa.responsaveis.map(r => r.nome).join(', ') %>
-                    <% } else { %>
-                      <%= tarefa.time ? tarefa.time.nome : '-' %>
-                    <% } %>
-                  </td>
-                  <td><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></td>
-                  <td>
-                    <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
-                      <%= tarefa.complexidade %>
-                    </span>
-                  </td>
-                  <td class="text-center">
-                    <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
-                      <%= tarefa.status.replace('_', ' ') %>
-                    </span>
-                  </td>
-                  <td class="text-end pe-3">
-                    <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
-                  </td>
-                </tr>
-              <% }) %>
-              <% if (todasTarefas.length === 0) { %>
-                <tr><td colspan="5" class="text-center py-4 text-muted small">Nenhuma tarefa registrada para o seu time.</td></tr>
-              <% } %>
+            <tbody id="bodyTeam">
+              <!-- Renderizado via JS -->
             </tbody>
           </table>
         </div>
@@ -189,32 +156,161 @@
   </div>
 </div>
 
+<script id="data-mine" type="application/json">
+    <%- JSON.stringify(minhasTarefas) %>
+</script>
+<script id="data-team" type="application/json">
+    <%- JSON.stringify(tarefasTime) %>
+</script>
+
 <script>
-    function applyFilters() {
+    const allMine = JSON.parse(document.getElementById('data-mine').textContent);
+    const allTeam = JSON.parse(document.getElementById('data-team').textContent);
+    
+    let filteredMine = [...allMine];
+    let filteredTeam = [...allTeam];
+    
+    let sortMine = { column: null, direction: 'asc' };
+    let sortTeam = { column: null, direction: 'asc' };
+
+    const complexityWeight = { 'BAIXA': 1, 'MEDIA': 2, 'ALTA': 3 };
+
+    function renderTables() {
+        renderTable('mine', filteredMine, 'bodyMine');
+        renderTable('team', filteredTeam, 'bodyTeam');
+    }
+
+    function renderTable(type, data, bodyId) {
+        const body = document.getElementById(bodyId);
+        body.innerHTML = '';
+
+        if (data.length === 0) {
+            const cols = type === 'mine' ? 5 : 6;
+            body.innerHTML = `<tr><td colspan="${cols}" class="text-center py-4 text-muted small">Nenhuma tarefa encontrada.</td></tr>`;
+            return;
+        }
+
+        data.forEach(tarefa => {
+            const tr = document.createElement('tr');
+            tr.className = `align-middle ${tarefa.status === 'ATRASADA' ? 'row-atrasada' : ''}`;
+            
+            const statusBadge = tarefa.status === 'CONCLUIDA' ? 'bg-success' : 
+                               tarefa.status === 'ATRASADA' ? 'bg-danger' : 
+                               tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark';
+
+            const complexBadge = tarefa.complexidade === 'ALTA' ? 'bg-danger' : 
+                                tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success';
+
+            let respHtml = '';
+            if (type === 'team') {
+                const respNames = (tarefa.responsaveis && tarefa.responsaveis.length > 0)
+                    ? tarefa.responsaveis.map(r => r.nome).join(', ')
+                    : (tarefa.time ? tarefa.time.nome : '-');
+                respHtml = `<td>${respNames}</td>`;
+            }
+
+            tr.innerHTML = `
+                <td class="ps-3 fw-bold">${tarefa.titulo}</td>
+                ${respHtml}
+                <td>${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}</td>
+                <td><span class="badge ${complexBadge}">${tarefa.complexidade}</span></td>
+                <td class="text-center">
+                    <span class="badge rounded-pill ${statusBadge}">
+                        ${tarefa.status.replace('_', ' ')}
+                    </span>
+                </td>
+                <td class="text-end pe-3">
+                    <a href="/tarefas/${tarefa.id}" class="btn btn-sm btn-potiguar py-0 px-3">Atualizar</a>
+                </td>
+            `;
+            body.appendChild(tr);
+        });
+
+        // Re-inicializar paginação (função global do footer.ejs)
+        if (typeof paginarTabela === 'function') {
+            paginarTabela(type === 'mine' ? 'tableMine' : 'tableTeam', 10);
+        }
+    }
+
+    function applyFilters(saveState = true) {
         const search = document.getElementById('liveSearch').value.toLowerCase();
         const status = document.getElementById('liveStatus').value;
         
-        document.querySelectorAll('tbody tr').forEach(row => {
-            if (row.cells.length < 2) return; // Pula a linha de "nenhuma tarefa"
-            
-            const matchesSearch = row.dataset.titulo.includes(search);
-            const matchesStatus = status === "" || row.dataset.status === status;
-            
-            if (matchesSearch && matchesStatus) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+        if (saveState) {
+            localStorage.setItem('colabDashboardFilters', JSON.stringify({ search, status }));
+        }
+
+        filteredMine = allMine.filter(t => {
+            const matchesSearch = t.titulo.toLowerCase().includes(search);
+            const matchesStatus = status === "" || t.status === status;
+            return matchesSearch && matchesStatus;
         });
+
+        filteredTeam = allTeam.filter(t => {
+            const matchesSearch = t.titulo.toLowerCase().includes(search);
+            const matchesStatus = status === "" || t.status === status;
+            return matchesSearch && matchesStatus;
+        });
+
+        if (sortMine.column) performSort('mine');
+        if (sortTeam.column) performSort('team');
+        
+        renderTables();
     }
 
-    document.getElementById('liveSearch').addEventListener('input', applyFilters);
-    document.getElementById('liveStatus').addEventListener('change', applyFilters);
+    function loadSavedState() {
+        // Restaurar Filtros
+        const savedFilters = localStorage.getItem('colabDashboardFilters');
+        if (savedFilters) {
+            const { search, status } = JSON.parse(savedFilters);
+            document.getElementById('liveSearch').value = search || '';
+            document.getElementById('liveStatus').value = status || '';
+        }
 
-    // Inicializar Paginação
+        // Restaurar Aba Ativa
+        const savedTab = localStorage.getItem('colabDashboardActiveTab');
+        if (savedTab) {
+            const tabEl = document.querySelector(`#taskTabs button[data-bs-target="${savedTab}"]`);
+            if (tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+
+        applyFilters(false);
+
+        // Restaurar Scroll
+        const savedScroll = sessionStorage.getItem(`scroll_${window.location.pathname}`);
+        if (savedScroll) {
+            window.scrollTo(0, parseInt(savedScroll));
+            sessionStorage.removeItem(`scroll_${window.location.pathname}`);
+        }
+    }
+
+    // Salvar aba ativa ao trocar
+    document.querySelectorAll('#taskTabs button').forEach(button => {
+        button.addEventListener('shown.bs.tab', (e) => {
+            localStorage.setItem('colabDashboardActiveTab', e.target.getAttribute('data-bs-target'));
+        });
+    });
+
+    // Salvar scroll ao clicar em um link de detalhe
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('a') && e.target.closest('tbody')) {
+            sessionStorage.setItem(`scroll_${window.location.pathname}`, window.scrollY);
+        }
+    });
+
+    document.getElementById('liveSearch').addEventListener('input', () => applyFilters(true));
+    document.getElementById('liveStatus').addEventListener('change', () => applyFilters(true));
+
+    document.querySelectorAll('[data-sort]').forEach(th => {
+        th.addEventListener('click', () => handleSort(th.dataset.sort, th.dataset.table));
+    });
+
+    // Inicialização
     document.addEventListener('DOMContentLoaded', () => {
-        paginarTabela('tableMine', 10);
-        paginarTabela('tableTeam', 10);
+        loadSavedState();
     });
 </script>
 

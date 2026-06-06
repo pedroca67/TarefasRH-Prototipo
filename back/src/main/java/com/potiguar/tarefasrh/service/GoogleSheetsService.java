@@ -61,6 +61,10 @@ public class GoogleSheetsService {
                         .collect(Collectors.joining(", "));
 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                
+                String feedbacksConcatenados = t.getFeedbacks().stream()
+                        .map(f -> f.getGestor().getNome() + ": " + f.getMensagem())
+                        .collect(Collectors.joining(" | "));
 
                 values.add(Arrays.asList(
                         t.getId().toString(),
@@ -81,7 +85,7 @@ public class GoogleSheetsService {
                         t.getDataPrazo().toString(),
                         t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
                         t.getEvidencia() != null ? t.getEvidencia() : "-",
-                        t.getFeedbackGestor() != null ? t.getFeedbackGestor() : "-"
+                        feedbacksConcatenados.isEmpty() ? "-" : feedbacksConcatenados
                 ));
             }
 

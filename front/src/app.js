@@ -78,6 +78,15 @@ app.get('/api/internal/notificacoes/count', authMiddleware, async (req, res) => 
     }
 });
 
+app.get('/api/internal/notificacoes', authMiddleware, async (req, res) => {
+    try {
+        const response = await apiService.getNotificacoes(req.session.usuario.id);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json([]);
+    }
+});
+
 // Rotas
 const apiService = require('./services/api');
 
@@ -136,18 +145,19 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
             res.render('dashboard/gestor', { stats, tarefas, times, currentPage: 'dashboard' });
         } else {
             const minhasTarefas = (await apiService.getTarefas(req.session.usuario.id)).data;
-            let todasTarefas = [];
+            let tarefasTime = [];
             if (req.session.usuario.time) {
-                todasTarefas = (await apiService.getTarefas(null, req.session.usuario.time.id)).data;
+                tarefasTime = (await apiService.getTarefas(null, req.session.usuario.time.id)).data;
             }
             res.render('dashboard/colaborador', { 
                 tarefas: minhasTarefas, // Para os cards de estatísticas
                 minhasTarefas, 
-                todasTarefas, 
+                tarefasTime, 
                 currentPage: 'dashboard' 
             });
         }
     } catch (error) {
+        console.error('Erro ao carregar dashboard:', error);
         res.status(500).send('Erro ao carregar dashboard');
     }
 });
@@ -239,9 +249,11 @@ app.get('/tarefas/:id', authMiddleware, async (req, res) => {
             console.error('Erro ao limpar notificações:', nErr.message);
         }
 
-        res.render('tarefas/detalhes', { tarefa, currentPage: 'tarefas' });
+        const feedbacks = (await apiService.getFeedbacks(req.params.id)).data;
+        res.render('tarefas/detalhes', { tarefa, feedbacks, currentPage: 'tarefas' });
     } catch (error) {
-        res.render('errors/403', { 
+        console.error('Erro ao carregar detalhes da tarefa:', error);
+        res.render('errors/403', {
             message: 'Tarefa não encontrada ou acesso negado.',
             redirectUrl: '/dashboard'
         });
@@ -251,7 +263,7 @@ app.get('/tarefas/:id', authMiddleware, async (req, res) => {
 app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
     try {
         const tarefa = (await apiService.getTarefa(req.params.id)).data;
-        
+
         // Verificação de autorização: Gestor, Responsável ou Membro do Time
         const isGestor = req.session.usuario.nivel === 'GESTOR';
         const isResponsavel = tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === req.session.usuario.id);
@@ -268,6 +280,7 @@ app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
         req.session.success = 'Status da tarefa atualizado com sucesso!';
         res.redirect('/dashboard');
     } catch (error) {
+        console.error('Erro ao atualizar status:', error);
         req.session.error = 'Erro ao atualizar status.';
         res.redirect('/dashboard');
     }
@@ -276,10 +289,11 @@ app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
 app.post('/tarefas/:id/feedback', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         const { feedback } = req.body;
-        await apiService.enviarFeedback(req.params.id, feedback);
+        await apiService.enviarFeedback(req.params.id, feedback, req.session.usuario.id);
         req.session.success = 'Feedback enviado com sucesso!';
         res.redirect(`/tarefas/${req.params.id}`);
     } catch (error) {
+        console.error('Erro ao enviar feedback:', error);
         req.session.error = 'Erro ao enviar feedback.';
         res.redirect(`/tarefas/${req.params.id}`);
     }
@@ -299,7 +313,6 @@ app.get('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
 app.get('/usuarios/:id', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         const usuarioPerfil = (await apiService.getUsuario(req.params.id)).data;
-        // Opcional: buscar tarefas deste usuário para mostrar no perfil
         const tarefas = (await apiService.getTarefas(req.params.id)).data;
         res.render('usuarios/detalhes', { usuarioPerfil, tarefas, currentPage: 'usuarios' });
     } catch (error) {
@@ -337,7 +350,7 @@ app.use((req, res) => {
 
 // Tratamento de 500 (Erro interno)
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Erro Global:', err);
     res.status(500).send('Algo deu errado! Tente novamente mais tarde.');
 });
 
