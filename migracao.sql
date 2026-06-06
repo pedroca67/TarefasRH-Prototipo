@@ -21,7 +21,7 @@ INSERT INTO time (id, nome) VALUES
 (3, 'Treinamento e Desenvolvimento'), (4, 'Benefícios');
 -- 2. GESTOR (Admitido em Jan/2024) - Senha: admin123
 INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao, codigo_funcionario) VALUES 
-(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.TVuHOn2', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
+(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$a4PrVfZ13kaB8atN//DOPOFhhPOu9oEWqtgBU8/ezKiKtITj95lfi', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
 
 -- 2. PROCEDURE COLABORADORES
 DROP PROCEDURE IF EXISTS GerarColaboradoresMassivo;
@@ -45,7 +45,7 @@ BEGIN
         VALUES (
             CONCAT('Colaborador ', i+2),
             CONCAT('user', i+2, '@potiguar.com.br'),
-            '$2a$10$vD9C.tK6w8J/ZJ0rXv9FxeU7lZ4Y8u3lJ5iZ5Wp1L8k5n9y6e4XG6', -- Senha: 123456
+            '$2a$10$6e5jq348SirFXZR9779U6.LbW5jvJlAm2bXv5CJaRZIepHqS3eSTu', -- Senha: 123456
             'COLABORADOR',
             r_loja,
             r_time,
