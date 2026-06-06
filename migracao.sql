@@ -2,6 +2,7 @@
 -- SCRIPT DE HARD RESET E GERAÇÃO MASSIVA (PROCEDURES)
 -- ======================================================
 
+SET NAMES utf8mb4;
 SET SQL_SAFE_UPDATES = 0;
 SET FOREIGN_KEY_CHECKS = 0;
 
