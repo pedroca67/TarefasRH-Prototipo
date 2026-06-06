@@ -70,11 +70,14 @@ public class TarefaController {
     }
 
     @GetMapping
-    public List<Tarefa> listar(
+    public Map<String, Object> listar(
             @RequestParam(required = false) Long responsavelId,
             @RequestParam(required = false) Long timeId,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
         List<Tarefa> tarefas;
         if (responsavelId != null) {
             Usuario resp = usuarioRepository.findById(responsavelId).orElseThrow();
@@ -86,8 +89,30 @@ public class TarefaController {
             tarefas = tarefaRepository.findAll();
         }
         
+        // 1. Filtragem por período
         tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
-        return atualizarStatusAtrasadas(tarefas);
+        
+        // 2. Atualização de status para a visualização
+        tarefas = atualizarStatusAtrasadas(tarefas);
+
+        // 3. Ordenação padrão (mais recentes primeiro)
+        tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
+
+        // 4. Paginação manual (para manter a lógica de filtros flexíveis do protótipo)
+        int totalItems = tarefas.size();
+        int totalPages = (int) Math.ceil((double) totalItems / size);
+        int start = Math.min(page * size, totalItems);
+        int end = Math.min(start + size, totalItems);
+        
+        List<Tarefa> paginatedContent = tarefas.subList(start, end);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", paginatedContent);
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalPages", totalPages);
+
+        return response;
     }
 
     @PostMapping
