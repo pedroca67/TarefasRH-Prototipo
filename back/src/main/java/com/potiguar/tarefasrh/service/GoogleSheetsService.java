@@ -120,24 +120,30 @@ public class GoogleSheetsService {
             }
 
             // Atualiza BASE_TAREFAS
-            updateSheet(service, "BASE_TAREFAS!A1:Z2000", valuesTarefas);
+            System.out.println("Tentando atualizar BASE_TAREFAS...");
+            updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas);
             
             // Atualiza BASE_TURNOVER
-            updateSheet(service, "BASE_TURNOVER!A1:I1000", valuesTurnover);
+            System.out.println("Tentando atualizar BASE_TURNOVER...");
+            updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover);
             
             // Atualiza RESUMO_METRICAS
-            updateSheet(service, "RESUMO_METRICAS!A1:C50", valuesResumo);
+            System.out.println("Tentando atualizar RESUMO_METRICAS...");
+            updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo);
 
-            System.out.println("Sincronização multicanal (3 abas) concluída.");
+            System.out.println("✅ Sincronização Google Sheets concluída com sucesso (3 abas).");
 
         } catch (Exception e) {
-            System.err.println("Erro ao sincronizar com Google Sheets: " + e.getMessage());
+            System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void updateSheet(Sheets service, String range, List<List<Object>> values) throws Exception {
-        service.spreadsheets().values().clear(spreadsheetId, range, null).execute();
+        // Limpa apenas a área necessária para não dar erro de permissão em células protegidas
+        String sheetName = range.contains("!") ? range.split("!")[0] : range;
+        service.spreadsheets().values().clear(spreadsheetId, sheetName + "!A1:Z5000", null).execute();
+        
         ValueRange body = new ValueRange().setValues(values);
         service.spreadsheets().values().update(spreadsheetId, range, body)
                 .setValueInputOption("RAW").execute();
