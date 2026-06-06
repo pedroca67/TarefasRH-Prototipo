@@ -267,6 +267,29 @@ public class TarefaController {
                 })
                 .collect(Collectors.toList());
 
+        // Lógica de Turnover (Últimos 6 meses)
+        List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
+        LocalDate hoje = LocalDate.now();
+        for (int i = 5; i >= 0; i--) {
+            LocalDate mesReferencia = hoje.minusMonths(i);
+            int mes = mesReferencia.getMonthValue();
+            int ano = mesReferencia.getYear();
+
+            long admissoes = usuarioRepository.findAll().stream()
+                    .filter(u -> u.getDataCriacao() != null && u.getDataCriacao().getMonthValue() == mes && u.getDataCriacao().getYear() == ano)
+                    .count();
+
+            long desligamentos = usuarioRepository.findAll().stream()
+                    .filter(u -> u.getDataDesativacao() != null && u.getDataDesativacao().getMonthValue() == mes && u.getDataDesativacao().getYear() == ano)
+                    .count();
+
+            Map<String, Object> turnoverMes = new HashMap<>();
+            turnoverMes.put("mes", mesReferencia.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("pt", "BR")));
+            turnoverMes.put("admissoes", admissoes);
+            turnoverMes.put("desligamentos", desligamentos);
+            turnoverData.add(turnoverMes);
+        }
+
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", (long) todas.size());
         stats.put("pendente", todas.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
@@ -282,6 +305,7 @@ public class TarefaController {
         stats.put("total_horas_est", totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
         stats.put("ranking", ranking);
+        stats.put("turnover", turnoverData);
         
         return stats;
     }

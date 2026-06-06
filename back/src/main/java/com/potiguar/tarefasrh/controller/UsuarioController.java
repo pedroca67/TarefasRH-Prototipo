@@ -37,6 +37,11 @@ public class UsuarioController {
     public void alternarStatus(@PathVariable Long id) {
         usuarioRepository.findById(id).ifPresent(u -> {
             u.setAtivo(!u.isAtivo());
+            if (!u.isAtivo()) {
+                u.setDataDesativacao(java.time.LocalDateTime.now());
+            } else {
+                u.setDataDesativacao(null);
+            }
             usuarioRepository.save(u);
         });
     }
