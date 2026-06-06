@@ -77,6 +77,7 @@
                         <option value="OUTROS" <%= filtro.categoria === 'OUTROS' ? 'selected' : '' %>>Outros</option>
                     </select>
                 </div>
+                <% if (usuario.nivel === 'GESTOR') { %>
                 <div class="col-6 col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Time</label>
                     <select name="timeId" class="form-select form-select-sm">
@@ -86,6 +87,7 @@
                         <% }) %>
                     </select>
                 </div>
+                <% } %>
                 <div class="col-12 col-md-1">
                     <div class="d-flex gap-1">
                         <button type="submit" class="btn btn-potiguar btn-sm w-100" title="Filtrar"><i class="bi bi-search"></i></button>
