@@ -5,6 +5,8 @@ import com.potiguar.tarefasrh.model.Tarefa;
 import com.potiguar.tarefasrh.model.Usuario;
 import com.potiguar.tarefasrh.model.Time;
 import com.potiguar.tarefasrh.model.Feedback;
+import com.potiguar.tarefasrh.model.Complexidade;
+import com.potiguar.tarefasrh.model.Categoria;
 import com.potiguar.tarefasrh.repository.TarefaRepository;
 import com.potiguar.tarefasrh.repository.UsuarioRepository;
 import com.potiguar.tarefasrh.repository.TimeRepository;
