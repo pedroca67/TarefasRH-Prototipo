@@ -223,10 +223,51 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
 app.get('/tarefas', authMiddleware, async (req, res) => {
     try {
-        const tarefas = (await apiService.getTarefas()).data;
+        // Lógica de Filtro de Período (Igual ao Dashboard)
+        let { periodo, dataDe, dataAte } = req.query;
+        if (!periodo) {
+            periodo = req.session.filtroPeriodo || 'todos';
+            dataDe = req.session.filtroDataDe;
+            dataAte = req.session.filtroDataAte;
+        } else {
+            req.session.filtroPeriodo = periodo;
+            req.session.filtroDataDe = dataDe;
+            req.session.filtroDataAte = dataAte;
+        }
+
+        let startDate, endDate;
+        const hoje = new Date();
+
+        if (periodo === 'semana') {
+            const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
+            const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
+            startDate = primeira.toISOString().split('T')[0];
+            endDate = ultima.toISOString().split('T')[0];
+        } else if (periodo === 'mes') {
+            startDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+            endDate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+        } else if (periodo === 'ano') {
+            startDate = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
+            endDate = new Date(hoje.getFullYear(), 11, 31).toISOString().split('T')[0];
+        } else if (periodo === 'personalizado') {
+            startDate = dataDe;
+            endDate = dataAte;
+        }
+
+        const filtroFormatado = { periodo, dataDe, dataAte };
+
+        // Busca tarefas respeitando o período e o papel
+        let tarefas;
+        if (req.session.usuario.nivel === 'GESTOR') {
+            tarefas = (await apiService.getTarefas(null, null, startDate, endDate)).data;
+        } else {
+            tarefas = (await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate)).data;
+        }
+
         const times = (await apiService.getTimes()).data;
-        res.render('tarefas/listagem', { tarefas, times, currentPage: 'tarefas' });
+        res.render('tarefas/listagem', { tarefas, times, filtro: filtroFormatado, currentPage: 'tarefas' });
     } catch (error) {
+        console.error('Erro ao carregar lista de tarefas:', error);
         res.status(500).send('Erro ao carregar lista de tarefas');
     }
 });
