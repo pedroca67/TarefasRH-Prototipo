@@ -112,7 +112,7 @@ DELIMITER ;
 
 -- 4. EXECUÇÃO
 CALL GerarColaboradoresMassivo(30);
-CALL GerarTarefasMassivo(200);
+CALL GerarTarefasMassivo(2000);
 
 SET SQL_SAFE_UPDATES = 1;
 COMMIT;
