@@ -7,8 +7,8 @@
 </div>
 
 <!-- Cards de Resumo -->
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
+<div class="row g-2 mb-4 row-cols-1 row-cols-md-3 row-cols-lg-5">
+  <div class="col">
     <div class="card stat-card total shadow-sm h-100 py-2">
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
@@ -17,13 +17,13 @@
             <div class="stat-value text-potiguar"><%= minhasTarefas.length %></div>
           </div>
           <div class="col-auto">
-            <i class="bi bi-list-task fs-2 text-potiguar opacity-25"></i>
+            <i class="bi bi-list-task fs-3 text-potiguar opacity-25"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col">
     <div class="card stat-card pendente shadow-sm h-100 py-2">
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
@@ -34,13 +34,13 @@
             </div>
           </div>
           <div class="col-auto">
-            <i class="bi bi-clock fs-2 text-warning opacity-25"></i>
+            <i class="bi bi-clock fs-3 text-warning opacity-25"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col">
     <div class="card stat-card concluida shadow-sm h-100 py-2">
       <div class="card-body py-2 px-3">
         <div class="row align-items-center g-0">
@@ -51,7 +51,37 @@
             </div>
           </div>
           <div class="col-auto">
-            <i class="bi bi-check-circle fs-2 text-success opacity-25"></i>
+            <i class="bi bi-check-circle fs-3 text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card stat-card shadow-sm h-100 py-2" style="border-left-color: #6f42c1;">
+      <div class="card-body py-2 px-3">
+        <div class="row align-items-center g-0">
+          <div class="col me-2">
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Impacto Total (Mês)</div>
+            <div class="stat-value" style="color: #6f42c1;"><%= impactoMensal %></div>
+          </div>
+          <div class="col-auto">
+            <i class="bi bi-trophy fs-3 opacity-25" style="color: #6f42c1;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card stat-card shadow-sm h-100 py-2" style="border-left-color: #fd7e14;">
+      <div class="card-body py-2 px-3">
+        <div class="row align-items-center g-0">
+          <div class="col me-2">
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1 small">Aderência Pessoal</div>
+            <div class="stat-value" style="color: #fd7e14;"><%= aderenciaPessoal %>%</div>
+            <div class="progress mt-1" style="height: 4px;">
+                <div class="progress-bar" role="progressbar" style="width: <%= aderenciaPessoal %>%; background-color: #fd7e14;"></div>
+            </div>
           </div>
         </div>
       </div>

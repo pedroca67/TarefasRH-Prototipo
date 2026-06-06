@@ -149,10 +149,30 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
             if (req.session.usuario.time) {
                 tarefasTime = (await apiService.getTarefas(null, req.session.usuario.time.id)).data;
             }
+
+            // Cálculo de métricas pessoais
+            const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
+            const minhasConcluidas = minhasTarefas.filter(t => t.status === 'CONCLUIDA');
+            
+            const impactoMensal = minhasConcluidas.reduce((acc, t) => {
+                const dataConc = new Date(t.dataConclusao);
+                const hoje = new Date();
+                if (dataConc.getMonth() === hoje.getMonth() && dataConc.getFullYear() === hoje.getFullYear()) {
+                    return acc + (pesoEsforco[t.complexidade] || 0);
+                }
+                return acc;
+            }, 0);
+
+            const aderenciaSim = minhasConcluidas.filter(t => t.previstoNoCargoColaborador === true).length;
+            const totalAderenciaResp = minhasConcluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
+            const aderenciaPessoal = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
+
             res.render('dashboard/colaborador', { 
                 tarefas: minhasTarefas, // Para os cards de estatísticas
                 minhasTarefas, 
                 tarefasTime, 
+                impactoMensal,
+                aderenciaPessoal,
                 currentPage: 'dashboard' 
             });
         }
