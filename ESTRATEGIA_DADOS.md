@@ -43,11 +43,27 @@ Este documento define a separação entre a camada **Operacional (Aplicativo)** 
 ---
 
 ## 🛠️ Fontes de Dados (Planilha Base)
-O Looker Studio deve ser conectado à aba `Tarefas_Export` da planilha integrada, utilizando as colunas:
-- `ID_Tarefa`, `Status`, `Complexidade`, `Categoria`.
-- `Previsto_Gestor` (Boolean) e `Previsto_Colaborador` (Boolean).
-- `Data_Criacao` e `Data_Conclusao`.
-- `Esforco_Pontos` e `Horas_Estimadas`.
+O Looker Studio deve ser conectado à planilha integrada, utilizando as colunas exportadas automaticamente pelo sistema:
+
+1.  **ID**: Identificador único da tarefa.
+2.  **Título**: Nome da atividade.
+3.  **Descrição**: Detalhamento do que foi solicitado.
+4.  **Responsável(is)**: Lista de nomes dos colaboradores atribuídos.
+5.  **Time**: Nome do setor/equipe responsável.
+6.  **Categoria**: Área do RH (Recrutamento, DP, etc).
+7.  **Previsto Cargo (Gestor)**: Expectativa inicial do gestor (SIM/NÃO).
+8.  **Previsto Cargo (Colab)**: Realidade percebida pelo executor na conclusão (SIM/NÃO).
+9.  **Criado Por**: Nome do usuário que abriu a tarefa.
+10. **Unidade do Criador**: Loja de origem da demanda.
+11. **Executor de Fato**: Nome de quem realmente marcou como concluída.
+12. **Status**: Estado atual (CONCLUIDA, ATRASADA, etc).
+13. **Complexidade**: Nível de dificuldade (BAIXA, MEDIA, ALTA).
+14. **Esforço (Pts)**: Pontuação de impacto (1, 3 ou 5).
+15. **Horas Est.**: Conversão de esforço em tempo (1pt = 2h).
+16. **Prazo**: Data limite original.
+17. **Conclusão**: Data e hora real da entrega.
+18. **Evidência**: Texto descritivo da entrega feita pelo colaborador.
+19. **Feedback Gestor**: Histórico consolidado de feedbacks dos gestores.
 
 ---
 
