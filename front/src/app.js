@@ -118,14 +118,15 @@ app.get('/logout', (req, res) => {
         if (err) {
             console.error('Erro ao destruir sessão:', err);
         }
-        res.clearCookie('tarefasrh.sid'); // Limpa o cookie personalizado da sessão
+        res.clearCookie('tarefasrh.sid'); 
         res.redirect('/login');
     });
 });
 
 app.get('/perfil', authMiddleware, async (req, res) => {
     try {
-        const tarefas = (await apiService.getTarefas(req.session.usuario.id)).data;
+        const response = await apiService.getTarefas(req.session.usuario.id, null, null, null, 0, 1000);
+        const tarefas = response.data.content;
         const stats = {
             total: tarefas.length,
             concluida: tarefas.filter(t => t.status === 'CONCLUIDA').length,
@@ -133,22 +134,19 @@ app.get('/perfil', authMiddleware, async (req, res) => {
         };
         res.render('usuarios/perfil', { stats, currentPage: 'perfil' });
     } catch (error) {
+        console.error('Erro ao carregar perfil:', error);
         res.status(500).send('Erro ao carregar perfil');
     }
 });
 
 app.get('/dashboard', authMiddleware, async (req, res) => {
     try {
-        // Lógica de Filtro de Período
         let { periodo, dataDe, dataAte } = req.query;
-        
-        // Se não vier na query, tenta pegar da sessão. Se não houver na sessão, PADRÃO: 'mes'
         if (!periodo) {
             periodo = req.session.filtroPeriodo || 'mes';
             dataDe = req.session.filtroDataDe;
             dataAte = req.session.filtroDataAte;
         } else {
-            // Salva na sessão o novo filtro
             req.session.filtroPeriodo = periodo;
             req.session.filtroDataDe = dataDe;
             req.session.filtroDataAte = dataAte;
@@ -156,7 +154,6 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
         let startDate, endDate;
         const hoje = new Date();
-
         if (periodo === 'semana') {
             const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
             const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
@@ -177,38 +174,27 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
         if (req.session.usuario.nivel === 'GESTOR') {
             const stats = (await apiService.getStats(startDate, endDate, true)).data;
-            
-            // Buscar apenas a primeira página para o preview do dashboard
             const responseTarefas = await apiService.getTarefas(null, null, startDate, endDate, 0, 50);
             const tarefas = responseTarefas.data.content;
-            
             const times = (await apiService.getTimes()).data;
             res.render('dashboard/gestor', { stats, tarefas, times, filtro: filtroFormatado, currentPage: 'dashboard' });
         } else {
             const responseMinhas = await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate, 0, 100);
             const minhasTarefas = responseMinhas.data.content;
-            
             let tarefasTime = [];
             if (req.session.usuario.time) {
                 const responseTime = await apiService.getTarefas(null, req.session.usuario.time.id, startDate, endDate, 0, 100);
                 tarefasTime = responseTime.data.content;
             }
 
-            // Cálculo de métricas pessoais
             const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
             const minhasConcluidas = minhasTarefas.filter(t => t.status === 'CONCLUIDA');
-            
-            const impactoMensal = minhasConcluidas.reduce((acc, t) => {
-                return acc + (pesoEsforco[t.complexidade] || 0);
-            }, 0);
-
+            const impactoMensal = minhasConcluidas.reduce((acc, t) => acc + (pesoEsforco[t.complexidade] || 0), 0);
             const aderenciaSim = minhasConcluidas.filter(t => t.previstoNoCargoColaborador === true).length;
             const totalAderenciaResp = minhasConcluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
             const aderenciaPessoal = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
 
-            const proximas = minhasTarefas
-                .filter(t => t.status !== 'CONCLUIDA')
-                .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo));
+            const proximas = minhasTarefas.filter(t => t.status !== 'CONCLUIDA').sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo));
             const entregaCritica = proximas.length > 0 ? proximas[0] : null;
 
             res.render('dashboard/colaborador', { 
@@ -230,10 +216,12 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
 app.get('/tarefas', authMiddleware, async (req, res) => {
     try {
-        // Lógica de Filtro de Período (Igual ao Dashboard)
-        let { periodo, dataDe, dataAte } = req.query;
+        let { periodo, dataDe, dataAte, page, size, search, status, complexidade, categoria, timeId } = req.query;
+        page = parseInt(page) || 0;
+        size = parseInt(size) || 10;
+
         if (!periodo) {
-            periodo = req.session.filtroPeriodo || 'todos';
+            periodo = req.session.filtroPeriodo || 'mes';
             dataDe = req.session.filtroDataDe;
             dataAte = req.session.filtroDataAte;
         } else {
@@ -244,7 +232,6 @@ app.get('/tarefas', authMiddleware, async (req, res) => {
 
         let startDate, endDate;
         const hoje = new Date();
-
         if (periodo === 'semana') {
             const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
             const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
@@ -261,25 +248,31 @@ app.get('/tarefas', authMiddleware, async (req, res) => {
             endDate = dataAte;
         }
 
-        const filtroFormatado = { periodo, dataDe, dataAte };
+        const filtroFormatado = { periodo, dataDe, dataAte, search, status, complexidade, categoria, timeId };
 
-        // Busca tarefas respeitando o período e o papel
-        let tarefas;
+        let response;
         if (req.session.usuario.nivel === 'GESTOR') {
-            tarefas = (await apiService.getTarefas(null, null, startDate, endDate)).data;
+            response = await apiService.getTarefas(null, timeId, startDate, endDate, page, size, search, status, complexidade, categoria);
         } else {
-            tarefas = (await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate)).data;
+            response = await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate, page, size, search, status, complexidade, categoria);
         }
 
+        const { content, totalPages, totalItems } = response.data;
         const times = (await apiService.getTimes()).data;
-        res.render('tarefas/listagem', { tarefas, times, filtro: filtroFormatado, currentPage: 'tarefas' });
+        
+        res.render('tarefas/listagem', { 
+            tarefas: content, 
+            times, 
+            filtro: filtroFormatado, 
+            pagination: { page, totalPages, totalItems, size },
+            currentPage: 'tarefas' 
+        });
     } catch (error) {
         console.error('Erro ao carregar lista de tarefas:', error);
         res.status(500).send('Erro ao carregar lista de tarefas');
     }
 });
 
-// Tarefas
 app.get('/tarefas/nova', authMiddleware, async (req, res) => {
     try {
         if (req.session.usuario.nivel === 'GESTOR') {
@@ -290,6 +283,7 @@ app.get('/tarefas/nova', authMiddleware, async (req, res) => {
             res.render('tarefas/form_colaborador', { currentPage: 'dashboard' });
         }
     } catch (error) {
+        console.error('Erro ao carregar form nova tarefa:', error);
         res.status(500).send('Erro ao carregar formulário');
     }
 });
@@ -298,20 +292,15 @@ app.post('/tarefas', authMiddleware, async (req, res) => {
     try {
         const { titulo, descricao, complexidade, dataPrazo, responsavelId, timeId, previstoNoCargoGestor, categoria } = req.body;
         const payload = {
-            titulo,
-            descricao,
-            complexidade,
-            dataPrazo,
+            titulo, descricao, complexidade, dataPrazo,
             previstoNoCargoGestor: previstoNoCargoGestor === 'on' || previstoNoCargoGestor === true || previstoNoCargoGestor === 'true',
             categoria: categoria || 'OUTROS',
             criadoPor: { id: req.session.usuario.id }
         };
 
         if (req.session.usuario.nivel === 'COLABORADOR') {
-            // Força auto-atribuição para colaborador
             payload.responsaveis = [{ id: req.session.usuario.id }];
             payload.time = req.session.usuario.time ? { id: req.session.usuario.time.id } : null;
-            payload.categoria = req.body.categoria || 'OUTROS';
         } else {
             if (Array.isArray(responsavelId)) {
                 payload.responsaveis = responsavelId.map(id => ({ id: parseInt(id) }));
@@ -321,70 +310,44 @@ app.post('/tarefas', authMiddleware, async (req, res) => {
                 payload.responsaveis = [];
             }
             payload.time = timeId ? { id: parseInt(timeId) } : null;
-            payload.categoria = req.body.categoria || 'OUTROS';
         }
 
         await apiService.criarTarefa(payload);
         req.session.success = 'Tarefa criada com sucesso!';
         res.redirect('/dashboard');
     } catch (error) {
+        console.error('Erro ao criar tarefa:', error);
         req.session.error = 'Erro ao criar tarefa. Tente novamente.';
-        res.status(500).send('Erro ao criar tarefa');
+        res.redirect('/dashboard');
     }
 });
 
 app.get('/tarefas/:id', authMiddleware, async (req, res) => {
     try {
         const tarefa = (await apiService.getTarefa(req.params.id)).data;
-        
-        // Verificação de autorização: Gestor, Responsável ou Membro do Time
         const isGestor = req.session.usuario.nivel === 'GESTOR';
         const isResponsavel = tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === req.session.usuario.id);
         const isDoTime = tarefa.time && req.session.usuario.time && tarefa.time.id === req.session.usuario.time.id;
 
         if (!isGestor && !isResponsavel && !isDoTime) {
-            return res.render('errors/403', { 
-                message: 'Ops! Você não tem autorização para visualizar esta tarefa.',
-                redirectUrl: '/dashboard'
-            });
+            return res.render('errors/403', { message: 'Acesso negado.', redirectUrl: '/dashboard' });
         }
 
-        // Marcar notificações como lidas ao visualizar
-        try {
-            await apiService.marcarNotificacoesComoLidas(req.params.id, req.session.usuario.id);
-        } catch (nErr) {
-            console.error('Erro ao limpar notificações:', nErr.message);
-        }
+        try { await apiService.marcarNotificacoesComoLidas(req.params.id, req.session.usuario.id); } catch (nErr) {}
 
         const feedbacks = (await apiService.getFeedbacks(req.params.id)).data;
         res.render('tarefas/detalhes', { tarefa, feedbacks, currentPage: 'tarefas' });
     } catch (error) {
-        console.error('Erro ao carregar detalhes da tarefa:', error);
-        res.render('errors/403', {
-            message: 'Tarefa não encontrada ou acesso negado.',
-            redirectUrl: '/dashboard'
-        });
+        console.error('Erro ao buscar tarefa:', error);
+        res.render('errors/403', { message: 'Erro ao carregar detalhes.', redirectUrl: '/dashboard' });
     }
 });
 
 app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
     try {
-        const tarefa = (await apiService.getTarefa(req.params.id)).data;
-
-        // Verificação de autorização: Gestor, Responsável ou Membro do Time
-        const isGestor = req.session.usuario.nivel === 'GESTOR';
-        const isResponsavel = tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === req.session.usuario.id);
-        const isDoTime = tarefa.time && req.session.usuario.time && tarefa.time.id === req.session.usuario.time.id;
-
-        if (!isGestor && !isResponsavel && !isDoTime) {
-            req.session.error = 'Acesso negado para alteração de status.';
-            return res.redirect('/dashboard');
-        }
-
         const { status, evidencia, previstoNoCargoColaborador } = req.body;
-        const concluidoPorId = req.session.usuario.id;
-        await apiService.atualizarStatus(req.params.id, status, evidencia, previstoNoCargoColaborador, concluidoPorId);
-        req.session.success = 'Status da tarefa atualizado com sucesso!';
+        await apiService.atualizarStatus(req.params.id, status, evidencia, previstoNoCargoColaborador, req.session.usuario.id);
+        req.session.success = 'Status atualizado!';
         res.redirect('/dashboard');
     } catch (error) {
         console.error('Erro ao atualizar status:', error);
@@ -395,9 +358,8 @@ app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
 
 app.post('/tarefas/:id/feedback', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
-        const { feedback } = req.body;
-        await apiService.enviarFeedback(req.params.id, feedback, req.session.usuario.id);
-        req.session.success = 'Feedback enviado com sucesso!';
+        await apiService.enviarFeedback(req.params.id, req.body.feedback, req.session.usuario.id);
+        req.session.success = 'Feedback enviado!';
         res.redirect(`/tarefas/${req.params.id}`);
     } catch (error) {
         console.error('Erro ao enviar feedback:', error);
@@ -420,21 +382,22 @@ app.get('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
 app.get('/usuarios/:id', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         const usuarioPerfil = (await apiService.getUsuario(req.params.id)).data;
-        const tarefas = (await apiService.getTarefas(req.params.id)).data;
+        const responseTarefas = await apiService.getTarefas(req.params.id, null, null, null, 0, 1000);
+        const tarefas = responseTarefas.data.content;
         res.render('usuarios/detalhes', { usuarioPerfil, tarefas, currentPage: 'usuarios' });
     } catch (error) {
-        res.status(500).send('Erro ao buscar detalhes do usuário');
+        console.error('Erro ao buscar perfil de usuário:', error);
+        res.status(500).send('Erro ao buscar detalhes');
     }
 });
 
 app.post('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         await apiService.salvarUsuario(req.body);
-        req.session.success = 'Usuário salvo com sucesso!';
+        req.session.success = 'Usuário salvo!';
         res.redirect('/usuarios');
     } catch (error) {
-        console.error('Erro ao salvar usuário:', error.response?.data || error.message);
-        req.session.error = 'Erro ao salvar usuário. Verifique se o e-mail ou código já existem.';
+        req.session.error = 'Erro ao salvar usuário.';
         res.redirect('/usuarios');
     }
 });
@@ -442,51 +405,34 @@ app.post('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
 app.post('/usuarios/:id/toggle', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         await apiService.toggleUsuarioStatus(req.params.id);
-        req.session.success = 'Status do usuário alterado!';
+        req.session.success = 'Status alterado!';
         res.redirect('/usuarios');
     } catch (error) {
-        req.session.error = 'Erro ao alterar status do usuário.';
-        res.status(500).send('Erro ao alterar status do usuário');
+        res.status(500).send('Erro ao alterar status');
     }
 });
 
 app.get('/usuarios/:id/relatorio', authMiddleware, gestorMiddleware, async (req, res) => {
     try {
         const usuarioPerfil = (await apiService.getUsuario(req.params.id)).data;
-        const tarefas = (await apiService.getTarefas(req.params.id)).data;
-        
-        // Calcular estatísticas avançadas para o relatório
+        const responseTarefas = await apiService.getTarefas(req.params.id, null, null, null, 0, 1000);
+        const tarefas = responseTarefas.data.content;
         const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
         const concluidas = tarefas.filter(t => t.status === 'CONCLUIDA');
-        
         const impactoTotal = concluidas.reduce((acc, t) => acc + (pesoEsforco[t.complexidade] || 0), 0);
-        const aderenciaSim = concluidas.filter(t => t.previstoNoCargoColaborador === true).length;
         const totalAderenciaResp = concluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
-        const aderenciaPercent = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
-
-        res.render('usuarios/relatorio', { 
-            usuarioPerfil, 
-            tarefas, 
-            impactoTotal, 
-            aderenciaPercent,
-            currentPage: 'usuarios' 
-        });
+        const aderenciaPercent = totalAderenciaResp > 0 ? Math.round((concluidas.filter(t => t.previstoNoCargoColaborador === true).length / totalAderenciaResp) * 100) : 0;
+        res.render('usuarios/relatorio', { usuarioPerfil, tarefas, impactoTotal, aderenciaPercent, currentPage: 'usuarios' });
     } catch (error) {
+        console.error('Erro ao gerar relatório:', error);
         res.status(500).send('Erro ao gerar relatório');
     }
 });
 
-// Tratamento de 404 (Página não encontrada) - Deve ser a última rota
-app.use((req, res) => {
-    res.status(404).render('errors/404');
-});
-
-// Tratamento de 500 (Erro interno)
+app.use((req, res) => res.status(404).render('errors/404'));
 app.use((err, req, res, next) => {
     console.error('Erro Global:', err);
     res.status(500).send('Algo deu errado! Tente novamente mais tarde.');
 });
 
-app.listen(port, () => {
-    console.log(`Frontend rodando em http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`Frontend rodando em http://localhost:${port}`));
