@@ -177,6 +177,8 @@
             const complexBadge = tarefa.complexidade === 'ALTA' ? 'bg-danger' : 
                                 tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success';
 
+            const isAtrasadaVisual = tarefa.status !== 'CONCLUIDA' && new Date(tarefa.dataPrazo) < new Date(new Date().setHours(0,0,0,0));
+
             tr.innerHTML = `
                 <td class="ps-3 fw-bold">
                     ${tarefa.titulo}
@@ -185,7 +187,10 @@
                     </div>
                 </td>
                 <td>${respTime}</td>
-                <td>${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}</td>
+                <td class="${isAtrasadaVisual ? 'text-danger fw-bold' : ''}">
+                    ${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}
+                    ${isAtrasadaVisual ? '<i class="bi bi-exclamation-triangle-fill ms-1"></i>' : ''}
+                </td>
                 <td><span class="badge ${complexBadge}">${tarefa.complexidade}</span></td>
                 <td class="text-center"><span class="badge rounded-pill ${statusBadge}">${tarefa.status.replace('_', ' ')}</span></td>
                 <td class="text-end pe-3">
@@ -220,12 +225,22 @@
             </li>
         `;
 
+        // Lógica de Janela Deslizante
+        const range = 2; // Mostrar 2 antes e 2 depois
         for (let i = 1; i <= totalPages; i++) {
-            controls.innerHTML += `
-                <li class="page-item ${currentPage === i ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="event.preventDefault(); changePage(${i})">${i}</a>
-                </li>
-            `;
+            if (i === 1 || i === totalPages || (i >= currentPage - range && i <= currentPage + range)) {
+                controls.innerHTML += `
+                    <li class="page-item ${currentPage === i ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="event.preventDefault(); changePage(${i})">${i}</a>
+                    </li>
+                `;
+            } else if (i === currentPage - range - 1 || i === currentPage + range + 1) {
+                controls.innerHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                `;
+            }
         }
 
         // Próxima

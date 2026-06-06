@@ -350,6 +350,8 @@
             const complexBadge = tarefa.complexidade === 'ALTA' ? 'bg-danger' : 
                                 tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success';
 
+            const isAtrasadaVisual = tarefa.status !== 'CONCLUIDA' && new Date(tarefa.dataPrazo) < new Date(new Date().setHours(0,0,0,0));
+
             let respHtml = '';
             if (type === 'team') {
                 const respNames = (tarefa.responsaveis && tarefa.responsaveis.length > 0)
@@ -361,7 +363,10 @@
             tr.innerHTML = `
                 <td class="ps-3 fw-bold">${tarefa.titulo}</td>
                 ${respHtml}
-                <td>${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}</td>
+                <td class="${isAtrasadaVisual ? 'text-danger fw-bold' : ''}">
+                    ${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}
+                    ${isAtrasadaVisual ? '<i class="bi bi-exclamation-triangle-fill ms-1"></i>' : ''}
+                </td>
                 <td><span class="badge ${complexBadge}">${tarefa.complexidade}</span></td>
                 <td class="text-center">
                     <span class="badge rounded-pill ${statusBadge}">

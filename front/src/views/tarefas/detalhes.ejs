@@ -70,7 +70,13 @@
           <div class="col-md-3">
             <div class="p-3 bg-light rounded h-100">
                 <small class="text-muted d-block fw-bold text-uppercase">Prazo</small>
-                <span class="fw-bold text-dark"><%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %></span>
+                <% 
+                  const isAtrasadaVisual = tarefa.status !== 'CONCLUIDA' && new Date(tarefa.dataPrazo) < new Date(new Date().setHours(0,0,0,0));
+                %>
+                <span class="fw-bold <%= isAtrasadaVisual ? 'text-danger' : 'text-dark' %>">
+                    <%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %>
+                    <% if (isAtrasadaVisual) { %><i class="bi bi-exclamation-triangle-fill ms-1"></i><% } %>
+                </span>
             </div>
           </div>
 
