@@ -18,7 +18,8 @@ module.exports = {
     getTimes: () => api.get('/times'),
 
     // Tarefas
-    getTarefas: (responsavelId, timeId, startDate, endDate) => api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate } }),
+    getTarefas: (responsavelId, timeId, startDate, endDate, page = 0, size = 10) => 
+        api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size } }),
     getTarefa: (id) => api.get(`/tarefas/${id}`),
     criarTarefa: (dados) => api.post('/tarefas', dados),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
@@ -30,5 +31,6 @@ module.exports = {
     getNotificacoes: (usuarioId) => api.get('/notificacoes', { params: { usuarioId } }),
     marcarNotificacoesComoLidas: (taskId, usuarioId) => api.patch(`/notificacoes/read-by-task/${taskId}`, null, { params: { usuarioId } }),
     
-    getStats: (startDate, endDate, analyticalMode = false) => api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } })
+    getStats: (startDate, endDate, analyticalMode = false) => 
+        api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } })
 };

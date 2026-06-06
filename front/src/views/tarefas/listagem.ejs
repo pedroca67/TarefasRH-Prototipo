@@ -30,78 +30,10 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('periodoSelect')?.addEventListener('change', function() {
-        if (this.value === 'personalizado') {
-            document.getElementById('customDates').classList.remove('d-none');
-        } else {
-            document.getElementById('customDates').classList.add('d-none');
-            document.getElementById('periodFilterForm').submit();
-        }
-    });
-</script>
-
-<!-- Filtros -->
-<div class="card shadow-sm border-0 mb-3">
-    <div class="card-body p-3">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-bold text-muted mb-1">BUSCAR TÍTULO</label>
-                <input type="text" id="filterSearch" class="form-control form-control-sm" placeholder="Digite para buscar...">
-            </div>
-            <div class="col-12 col-md-2">
-                <label class="form-label small fw-bold text-muted mb-1">STATUS</label>
-                <select id="filterStatus" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    <option value="PENDENTE">Pendente</option>
-                    <option value="EM_ANDAMENTO">Em Andamento</option>
-                    <option value="CONCLUIDA">Concluída</option>
-                    <option value="ATRASADA">Atrasada</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-2">
-                <label class="form-label small fw-bold text-muted mb-1">COMPLEXIDADE</label>
-                <select id="filterComplexidade" class="form-select form-select-sm">
-                    <option value="">Todas</option>
-                    <option value="BAIXA">Baixa</option>
-                    <option value="MEDIA">Média</option>
-                    <option value="ALTA">Alta</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-2">
-                <label class="form-label small fw-bold text-muted mb-1">CATEGORIA</label>
-                <select id="filterCategoria" class="form-select form-select-sm">
-                    <option value="">Todas</option>
-                    <option value="RECRUTAMENTO_E_SELECAO">Recrutamento e Seleção</option>
-                    <option value="DEPARTAMENTO_PESSOAL">Departamento Pessoal</option>
-                    <option value="TREINAMENTO_E_DESENVOLVIMENTO">Treinamento e Desenvolvimento</option>
-                    <option value="CARGOS_E_SALARIOS">Cargos e Salários</option>
-                    <option value="BENEFICIOS">Benefícios</option>
-                    <option value="ENDOMARKETING">Endomarketing</option>
-                    <option value="SAUDE_E_SEGURANCA">Saúde e Segurança</option>
-                    <option value="OUTROS">Outros</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-bold text-muted mb-1">TIME</label>
-                <select id="filterTime" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    <% times.forEach(t => { %>
-                        <option value="<%= t.id %>"><%= t.nome %></option>
-                    <% }) %>
-                </select>
-            </div>
-            <div class="col-12 col-md-2">
-                <button id="btnClearFilters" class="btn btn-secondary btn-sm w-100">Limpar Filtros</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
     <h6 class="m-0 font-weight-bold text-potiguar fw-bold">Listagem de Atividades</h6>
-    <small id="resultsCounter" class="text-muted"></small>
+    <small class="text-muted">Total: <%= pagination.totalItems %> tarefas</small>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -110,312 +42,103 @@
           <tr>
             <th class="ps-3 border-0">Título</th>
             <th class="border-0">Responsável/Time</th>
-            <th class="border-0 cursor-pointer" data-sort="prazo">
-                Prazo <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
-            </th>
-            <th class="border-0 cursor-pointer" data-sort="complexidade">
-                Complexidade <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
-            </th>
-            <th class="border-0 text-center cursor-pointer" data-sort="status">
-                Status <i class="bi bi-arrow-down-up small opacity-50 ms-1"></i>
-            </th>
+            <th class="border-0">Prazo</th>
+            <th class="border-0">Complexidade</th>
+            <th class="border-0 text-center">Status</th>
             <th class="text-end pe-3 border-0">Ações</th>
           </tr>
         </thead>
-        <tbody id="tasksTableBody">
-          <!-- Renderizado via JS -->
+        <tbody>
+          <% tarefas.forEach(tarefa => { %>
+            <% 
+               const isAtrasadaVisual = tarefa.status !== 'CONCLUIDA' && new Date(tarefa.dataPrazo) < new Date(new Date().setHours(0,0,0,0));
+               const respNames = (tarefa.responsaveis && tarefa.responsaveis.length > 0) ? tarefa.responsaveis.map(r => r.nome).join(', ') : null;
+               const respTime = respNames ? respNames : (tarefa.time ? tarefa.time.nome : '-');
+            %>
+            <tr class="align-middle <%= tarefa.status === 'ATRASADA' ? 'row-atrasada' : '' %>">
+              <td class="ps-3 fw-bold">
+                <%= tarefa.titulo %>
+                <div class="text-muted" style="font-size: 0.7rem; font-weight: normal;">
+                    <i class="bi bi-person-plus me-1"></i>Criado por: <%= tarefa.criadoPor ? tarefa.criadoPor.nome : 'Sistema' %>
+                </div>
+              </td>
+              <td><i class="bi bi-person me-1"></i><%= respTime %></td>
+              <td class="<%= isAtrasadaVisual ? 'text-danger fw-bold' : '' %>">
+                <%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %>
+                <% if (isAtrasadaVisual) { %><i class="bi bi-exclamation-triangle-fill ms-1"></i><% } %>
+              </td>
+              <td>
+                <span class="badge <%= tarefa.complexidade === 'ALTA' ? 'bg-danger' : tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success' %>">
+                    <%= tarefa.complexidade %>
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge rounded-pill <%= tarefa.status === 'CONCLUIDA' ? 'bg-success' : tarefa.status === 'ATRASADA' ? 'bg-danger' : tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark' %>">
+                    <%= tarefa.status.replace('_', ' ') %>
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                <a href="/tarefas/<%= tarefa.id %>" class="btn btn-sm btn-outline-secondary py-0">Detalhes</a>
+              </td>
+            </tr>
+          <% }) %>
+          <% if (tarefas.length === 0) { %>
+            <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma tarefa encontrada no período.</td></tr>
+          <% } %>
         </tbody>
       </table>
     </div>
   </div>
-  <div class="card-footer bg-white border-top-0 py-3">
-    <nav aria-label="Navegação de tarefas">
-      <ul class="pagination pagination-sm justify-content-center mb-0" id="paginationControls">
-        <!-- Controles de paginação via JS -->
-      </ul>
-    </nav>
-  </div>
+  
+  <% if (pagination.totalPages > 1) { %>
+    <div class="card-footer bg-white border-top py-3">
+        <nav aria-label="Navegação">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <!-- Anterior -->
+                <li class="page-item <%= pagination.page === 0 ? 'disabled' : '' %>">
+                    <a class="page-link" href="/tarefas?page=<%= pagination.page - 1 %>&periodo=<%= filtro.periodo %>&dataDe=<%= filtro.dataDe %>&dataAte=<%= filtro.dataAte %>">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                <!-- Janela de Páginas -->
+                <% 
+                   const range = 2;
+                   for(let i = 0; i < pagination.totalPages; i++) { 
+                       if (i === 0 || i === pagination.totalPages - 1 || (i >= pagination.page - range && i <= pagination.page + range)) {
+                %>
+                        <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
+                            <a class="page-link" href="/tarefas?page=<%= i %>&periodo=<%= filtro.periodo %>&dataDe=<%= filtro.dataDe %>&dataAte=<%= filtro.dataAte %>"><%= i + 1 %></a>
+                        </li>
+                <% 
+                       } else if (i === pagination.page - range - 1 || i === pagination.page + range + 1) { 
+                %>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                <% 
+                       }
+                   } 
+                %>
+
+                <!-- Próxima -->
+                <li class="page-item <%= pagination.page === pagination.totalPages - 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="/tarefas?page=<%= pagination.page + 1 %>&periodo=<%= filtro.periodo %>&dataDe=<%= filtro.dataDe %>&dataAte=<%= filtro.dataAte %>">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+  <% } %>
 </div>
 
-<script id="tarefas-data" type="application/json">
-    <%- JSON.stringify(tarefas) %>
-</script>
-
 <script>
-    const allTasks = JSON.parse(document.getElementById('tarefas-data').textContent);
-    let filteredTasks = [...allTasks];
-    let currentSort = { column: null, direction: 'asc' };
-    let currentPage = 1;
-    const itemsPerPage = 10;
-
-    const complexityWeight = { 'BAIXA': 1, 'MEDIA': 2, 'ALTA': 3 };
-
-    function renderTable() {
-        const body = document.getElementById('tasksTableBody');
-        body.innerHTML = '';
-
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const pageItems = filteredTasks.slice(start, end);
-
-        pageItems.forEach(tarefa => {
-            const tr = document.createElement('tr');
-            tr.className = `align-middle ${tarefa.status === 'ATRASADA' ? 'row-atrasada' : ''}`;
-            
-            const respNames = (tarefa.responsaveis && tarefa.responsaveis.length > 0)
-                ? tarefa.responsaveis.map(r => r.nome).join(', ')
-                : null;
-
-            const respTime = respNames
-                ? `<i class="bi bi-person me-1"></i>${respNames}`
-                : (tarefa.time ? `<i class="bi bi-diagram-3 me-1"></i>${tarefa.time.nome}` : '-');
-
-            const statusBadge = tarefa.status === 'CONCLUIDA' ? 'bg-success' : 
-                               tarefa.status === 'ATRASADA' ? 'bg-danger' : 
-                               tarefa.status === 'EM_ANDAMENTO' ? 'bg-primary' : 'bg-warning text-dark';
-
-            const complexBadge = tarefa.complexidade === 'ALTA' ? 'bg-danger' : 
-                                tarefa.complexidade === 'MEDIA' ? 'bg-warning text-dark' : 'bg-success';
-
-            const isAtrasadaVisual = tarefa.status !== 'CONCLUIDA' && new Date(tarefa.dataPrazo) < new Date(new Date().setHours(0,0,0,0));
-
-            tr.innerHTML = `
-                <td class="ps-3 fw-bold">
-                    ${tarefa.titulo}
-                    <div class="text-muted" style="font-size: 0.7rem; font-weight: normal;">
-                        <i class="bi bi-person-plus me-1"></i>Criado por: ${tarefa.criadoPor ? tarefa.criadoPor.nome : 'Sistema'}
-                    </div>
-                </td>
-                <td>${respTime}</td>
-                <td class="${isAtrasadaVisual ? 'text-danger fw-bold' : ''}">
-                    ${new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR')}
-                    ${isAtrasadaVisual ? '<i class="bi bi-exclamation-triangle-fill ms-1"></i>' : ''}
-                </td>
-                <td><span class="badge ${complexBadge}">${tarefa.complexidade}</span></td>
-                <td class="text-center"><span class="badge rounded-pill ${statusBadge}">${tarefa.status.replace('_', ' ')}</span></td>
-                <td class="text-end pe-3">
-                    <a href="/tarefas/${tarefa.id}" onclick="saveScrollPos()" class="btn btn-sm btn-outline-secondary py-0">Detalhes</a>
-                </td>
-            `;
-            body.appendChild(tr);
-        });
-
-        document.getElementById('resultsCounter').innerText = `Exibindo ${start + 1}-${Math.min(end, filteredTasks.length)} de ${filteredTasks.length} tarefas`;
-        renderPagination();
-        
-        // Restaurar scroll se houver um salvo
-        const savedScroll = sessionStorage.getItem('dashboardScrollPos');
-        if (savedScroll) {
-            window.scrollTo(0, parseInt(savedScroll));
-            sessionStorage.removeItem('dashboardScrollPos');
-        }
-    }
-
-    function renderPagination() {
-        const controls = document.getElementById('paginationControls');
-        controls.innerHTML = '';
-        const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
-
-        if (totalPages <= 1) return;
-
-        // Anterior
-        controls.innerHTML += `
-            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="event.preventDefault(); changePage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></a>
-            </li>
-        `;
-
-        // Lógica de Janela Deslizante
-        const range = 2; // Mostrar 2 antes e 2 depois
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - range && i <= currentPage + range)) {
-                controls.innerHTML += `
-                    <li class="page-item ${currentPage === i ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="event.preventDefault(); changePage(${i})">${i}</a>
-                    </li>
-                `;
-            } else if (i === currentPage - range - 1 || i === currentPage + range + 1) {
-                controls.innerHTML += `
-                    <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                    </li>
-                `;
-            }
-        }
-
-        // Próxima
-        controls.innerHTML += `
-            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="event.preventDefault(); changePage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></a>
-            </li>
-        `;
-    }
-
-    function changePage(page) {
-        const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
-        if (page < 1 || page > totalPages) return;
-        currentPage = page;
-        renderTable();
-        
-        // Salvar página atual no localStorage junto com os filtros
-        const filters = JSON.parse(localStorage.getItem('dashboardFilters') || '{}');
-        filters.page = currentPage;
-        localStorage.setItem('dashboardFilters', JSON.stringify(filters));
-    }
-
-    // Função para salvar o scroll antes de navegar
-    function saveScrollPos() {
-        sessionStorage.setItem('dashboardScrollPos', window.scrollY);
-    }
-
-    function filterTasks() {
-        const search = document.getElementById('filterSearch').value.toLowerCase();
-        const status = document.getElementById('filterStatus').value;
-        const complex = document.getElementById('filterComplexidade').value;
-        const categoria = document.getElementById('filterCategoria').value;
-        const timeId = document.getElementById('filterTime').value;
-
-        // Salvar filtros no localStorage (mantendo a página se ela já estiver lá)
-        const currentFilters = JSON.parse(localStorage.getItem('dashboardFilters') || '{}');
-        localStorage.setItem('dashboardFilters', JSON.stringify({
-            search: document.getElementById('filterSearch').value,
-            status,
-            complex,
-            categoria,
-            timeId,
-            page: currentPage === 1 ? (currentFilters.page || 1) : currentPage
-        }));
-
-        filteredTasks = allTasks.filter(t => {
-            const matchesSearch = t.titulo.toLowerCase().includes(search);
-            const matchesStatus = status === "" || t.status === status;
-            const matchesComplex = complex === "" || t.complexidade === complex;
-            const matchesCategoria = categoria === "" || t.categoria === categoria;
-            const matchesTime = timeId === "" || (t.time && t.time.id == timeId);
-            return matchesSearch && matchesStatus && matchesComplex && matchesCategoria && matchesTime;
-        });
-
-        if (currentPage === 1) {
-            // Mantemos a página atual se ela foi restaurada pelo loadFilters
+    document.getElementById('periodoSelect')?.addEventListener('change', function() {
+        if (this.value === 'personalizado') {
+            document.getElementById('customDates').classList.remove('d-none');
         } else {
-            currentPage = 1;
+            document.getElementById('periodFilterForm').submit();
         }
-        
-        if (currentSort.column) sortTasks(currentSort.column, true);
-        else renderTable();
-    }
-
-    function loadFilters() {
-        const savedFilters = localStorage.getItem('dashboardFilters');
-        if (savedFilters) {
-            const filters = JSON.parse(savedFilters);
-            document.getElementById('filterSearch').value = filters.search || '';
-            document.getElementById('filterStatus').value = filters.status || '';
-            document.getElementById('filterComplexidade').value = filters.complex || '';
-            document.getElementById('filterCategoria').value = filters.categoria || '';
-            document.getElementById('filterTime').value = filters.timeId || '';
-            
-            // Restaurar a página salva
-            if (filters.page) {
-                currentPage = parseInt(filters.page);
-            }
-            
-            // Aplicar os filtros carregados sem resetar a página
-            applyInitialFilters();
-        } else {
-            renderTable();
-        }
-    }
-
-    function applyInitialFilters() {
-        const search = document.getElementById('filterSearch').value.toLowerCase();
-        const status = document.getElementById('filterStatus').value;
-        const complex = document.getElementById('filterComplexidade').value;
-        const categoria = document.getElementById('filterCategoria').value;
-        const timeId = document.getElementById('filterTime').value;
-
-        filteredTasks = allTasks.filter(t => {
-            const matchesSearch = t.titulo.toLowerCase().includes(search);
-            const matchesStatus = status === "" || t.status === status;
-            const matchesComplex = complex === "" || t.complexidade === complex;
-            const matchesCategoria = categoria === "" || t.categoria === categoria;
-            const matchesTime = timeId === "" || (t.time && t.time.id == timeId);
-            return matchesSearch && matchesStatus && matchesComplex && matchesCategoria && matchesTime;
-        });
-
-        if (currentSort.column) sortTasks(currentSort.column, true);
-        else renderTable();
-    }
-
-    function sortTasks(column, keepDirection = false) {
-        if (!keepDirection) {
-            if (currentSort.column === column) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = column;
-                currentSort.direction = 'asc';
-            }
-        }
-
-        filteredTasks.sort((a, b) => {
-            let valA, valB;
-            if (column === 'prazo') {
-                valA = new Date(a.dataPrazo);
-                valB = new Date(b.dataPrazo);
-            } else if (column === 'complexidade') {
-                valA = complexityWeight[a.complexidade];
-                valB = complexityWeight[b.complexidade];
-            } else if (column === 'status') {
-                valA = a.status;
-                valB = b.status;
-            }
-
-            if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        updateSortIcons();
-        renderTable();
-    }
-
-    function updateSortIcons() {
-        document.querySelectorAll('[data-sort]').forEach(th => {
-            const icon = th.querySelector('i');
-            th.classList.remove('sort-active');
-            icon.className = 'bi bi-arrow-down-up small opacity-50 ms-1';
-            
-            if (th.dataset.sort === currentSort.column) {
-                th.classList.add('sort-active');
-                icon.className = currentSort.direction === 'asc' ? 'bi bi-arrow-up small ms-1' : 'bi bi-arrow-down small ms-1';
-                icon.classList.remove('opacity-50');
-            }
-        });
-    }
-
-    // Event Listeners
-    document.getElementById('filterSearch').addEventListener('input', filterTasks);
-    document.getElementById('filterStatus').addEventListener('change', filterTasks);
-    document.getElementById('filterComplexidade').addEventListener('change', filterTasks);
-    document.getElementById('filterCategoria').addEventListener('change', filterTasks);
-    document.getElementById('filterTime').addEventListener('change', filterTasks);
-    
-    document.getElementById('btnClearFilters').addEventListener('click', () => {
-        document.getElementById('filterSearch').value = '';
-        document.getElementById('filterStatus').value = '';
-        document.getElementById('filterComplexidade').value = '';
-        document.getElementById('filterCategoria').value = '';
-        document.getElementById('filterTime').value = '';
-        localStorage.removeItem('dashboardFilters'); // Limpar memória
-        filterTasks();
     });
-
-    document.querySelectorAll('[data-sort]').forEach(th => {
-        th.addEventListener('click', () => sortTasks(th.dataset.sort));
-    });
-
-    // Initial render
-    loadFilters();
 </script>
 
 <%- include('../partials/footer') %>

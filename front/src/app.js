@@ -142,9 +142,9 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
         // Lógica de Filtro de Período
         let { periodo, dataDe, dataAte } = req.query;
         
-        // Se não vier na query, tenta pegar da sessão
+        // Se não vier na query, tenta pegar da sessão. Se não houver na sessão, PADRÃO: 'mes'
         if (!periodo) {
-            periodo = req.session.filtroPeriodo || 'todos';
+            periodo = req.session.filtroPeriodo || 'mes';
             dataDe = req.session.filtroDataDe;
             dataAte = req.session.filtroDataAte;
         } else {
@@ -177,17 +177,24 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
         if (req.session.usuario.nivel === 'GESTOR') {
             const stats = (await apiService.getStats(startDate, endDate, true)).data;
-            const tarefas = (await apiService.getTarefas(null, null, startDate, endDate)).data;
+            
+            // Buscar apenas a primeira página para o preview do dashboard
+            const responseTarefas = await apiService.getTarefas(null, null, startDate, endDate, 0, 50);
+            const tarefas = responseTarefas.data.content;
+            
             const times = (await apiService.getTimes()).data;
             res.render('dashboard/gestor', { stats, tarefas, times, filtro: filtroFormatado, currentPage: 'dashboard' });
         } else {
-            const minhasTarefas = (await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate)).data;
+            const responseMinhas = await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate, 0, 100);
+            const minhasTarefas = responseMinhas.data.content;
+            
             let tarefasTime = [];
             if (req.session.usuario.time) {
-                tarefasTime = (await apiService.getTarefas(null, req.session.usuario.time.id, startDate, endDate)).data;
+                const responseTime = await apiService.getTarefas(null, req.session.usuario.time.id, startDate, endDate, 0, 100);
+                tarefasTime = responseTime.data.content;
             }
 
-            // Cálculo de métricas pessoais (respeitando o filtro de período)
+            // Cálculo de métricas pessoais
             const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
             const minhasConcluidas = minhasTarefas.filter(t => t.status === 'CONCLUIDA');
             
@@ -199,7 +206,6 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
             const totalAderenciaResp = minhasConcluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
             const aderenciaPessoal = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
 
-            // Identificar Entrega Crítica (mais próxima do prazo, entre as filtradas)
             const proximas = minhasTarefas
                 .filter(t => t.status !== 'CONCLUIDA')
                 .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo));
