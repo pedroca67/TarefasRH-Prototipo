@@ -67,5 +67,60 @@ O Looker Studio deve ser conectado à planilha integrada, utilizando as colunas 
 
 ---
 
+## 🛠️ Guia de Configuração de Gráficos (Looker Studio)
+
+Para resolver o desafio da Potiguar, configure seus gráficos no Looker utilizando estas combinações de **Dimensões** e **Métricas**:
+
+### 1. Visão Geral de Impacto (Scorecards / Visão Geral)
+*   **Dado:** Total de Pontos de Impacto
+    *   **Métrica:** `SUM(Esforço (Pts))`
+*   **Dado:** Total de Horas Estimadas
+    *   **Métrica:** `SUM(Horas Est.)`
+*   **Dado:** Tarefas Atrasadas
+    *   **Métrica:** `COUNT(ID)` onde `Status = "ATRASADA"`
+
+### 2. O Mismatch de Cargos (Gráfico de Pizza ou Barras Empilhadas)
+*   **Objetivo:** Mostrar o "Gap" entre o que o gestor pede e o que o RH faz de fato.
+*   **Dimensão:** `Previsto Cargo (Colab)`
+*   **Métrica:** `COUNT(ID)`
+*   **Sort:** Descrescente por Valor.
+*   *Dica:* Use filtros para ver por `Time` ou `Unidade do Criador`.
+
+### 3. Produtividade por Área (Gráfico de Barras)
+*   **Objetivo:** Identificar qual categoria de RH consome mais esforço.
+*   **Dimensão:** `Categoria`
+*   **Métrica:** `SUM(Esforço (Pts))`
+*   **Sort:** Descrescente por Métrica.
+*   **Tipo:** Barras Horizontais.
+
+### 4. Ranking Histórico de Talentos (Tabela Dinâmica)
+*   **Linha (Dimensão):** `Executor de Fato`
+*   **Coluna (Dimensão):** `Conclusão` (Granularidade: Mês)
+*   **Métrica:** `SUM(Esforço (Pts))`
+*   **Sort:** Descrescente pelo Total.
+
+### 5. Tendência de Carga de Trabalho (Série Temporal)
+*   **Dimensão de Período:** `Prazo` ou `Conclusão`
+*   **Métrica:** `SUM(Horas Est.)`
+*   **Quebra de Dimensão:** `Status`
+*   *Insight:* Ver picos de demanda ao longo do mês.
+
+### 6. Mapa de Calor de Demandas (Google Maps / Gráfico de Mapa)
+*   **Dimensão:** `Unidade do Criador` (Ex: Cohama, Centro, Imperatriz)
+*   **Métrica:** `COUNT(ID)`
+*   *Insight:* Visualizar quais lojas de São Luís e Interior geram mais demandas para o RH.
+
+### 7. Funil de Eficiência (Gráfico de Funil)
+*   **Dimensão:** `Status` (Etapas: PENDENTE -> EM_ANDAMENTO -> CONCLUIDA)
+*   **Métrica:** `COUNT(ID)`
+*   *Insight:* Ver em qual etapa as tarefas estão ficando "travadas".
+
+### 8. Detalhamento de Auditoria (Tabela)
+*   **Dimensões:** `Título`, `Executor de Fato`, `Conclusão`, `Evidência`, `Feedback Gestor`.
+*   **Métrica:** `Esforço (Pts)`
+*   **Sort:** `Conclusão` (Mais recente primeiro).
+
+---
+
 ## 💡 Argumento para Apresentação
 *"Enquanto nosso sistema garante que nenhuma tarefa seja esquecida e que o feedback chegue ao colaborador na hora certa, o Looker Studio nos permite olhar para trás e entender se a estrutura do nosso RH está saudável ou se precisamos atualizar nossas descrições de cargo."*
