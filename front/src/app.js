@@ -175,7 +175,7 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
         const filtroFormatado = { periodo, dataDe, dataAte };
 
         if (req.session.usuario.nivel === 'GESTOR') {
-            const stats = (await apiService.getStats(startDate, endDate)).data;
+            const stats = (await apiService.getStats(startDate, endDate, true)).data;
             const tarefas = (await apiService.getTarefas(null, null, startDate, endDate)).data;
             const times = (await apiService.getTimes()).data;
             res.render('dashboard/gestor', { stats, tarefas, times, filtro: filtroFormatado, currentPage: 'dashboard' });

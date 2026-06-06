@@ -48,14 +48,21 @@ public class TarefaController {
         }).collect(Collectors.toList());
     }
 
-    private List<Tarefa> filtrarPorPeriodo(List<Tarefa> tarefas, LocalDate startDate, LocalDate endDate) {
+    private List<Tarefa> filtrarPorPeriodo(List<Tarefa> tarefas, LocalDate startDate, LocalDate endDate, boolean useCompletionDate) {
         if (startDate == null && endDate == null) return tarefas;
         return tarefas.stream().filter(t -> {
-            LocalDate dataRef = t.getDataCriacao().toLocalDate();
-            LocalDate dataPrazo = t.getDataPrazo();
             boolean matches = true;
-            if (startDate != null) matches = matches && (dataRef.isAfter(startDate.minusDays(1)) || dataPrazo.isAfter(startDate.minusDays(1)));
-            if (endDate != null) matches = matches && (dataRef.isBefore(endDate.plusDays(1)) || dataPrazo.isBefore(endDate.plusDays(1)));
+            if (useCompletionDate) {
+                if (t.getDataConclusao() == null) return false;
+                LocalDate dataConc = t.getDataConclusao().toLocalDate();
+                if (startDate != null) matches = matches && dataConc.isAfter(startDate.minusDays(1));
+                if (endDate != null) matches = matches && dataConc.isBefore(endDate.plusDays(1));
+            } else {
+                LocalDate dataRef = t.getDataCriacao().toLocalDate();
+                LocalDate dataPrazo = t.getDataPrazo();
+                if (startDate != null) matches = matches && (dataRef.isAfter(startDate.minusDays(1)) || dataPrazo.isAfter(startDate.minusDays(1)));
+                if (endDate != null) matches = matches && (dataRef.isBefore(endDate.plusDays(1)) || dataPrazo.isBefore(endDate.plusDays(1)));
+            }
             return matches;
         }).collect(Collectors.toList());
     }
@@ -77,7 +84,7 @@ public class TarefaController {
             tarefas = tarefaRepository.findAll();
         }
         
-        tarefas = filtrarPorPeriodo(tarefas, startDate, endDate);
+        tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
         return atualizarStatusAtrasadas(tarefas);
     }
 
@@ -213,30 +220,36 @@ public class TarefaController {
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        List<Tarefa> todas = tarefaRepository.findAll();
-        todas = atualizarStatusAtrasadas(todas);
-        todas = filtrarPorPeriodo(todas, startDate, endDate);
+        List<Tarefa> todasBase = tarefaRepository.findAll();
+        todasBase = atualizarStatusAtrasadas(todasBase);
 
-        long esforcoTotal = todas.stream()
+        // Para os cards de status (Pendente, Atrasada, etc), sempre usamos a lógica operacional
+        List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
+
+        // Para as métricas de performance (Produtividade, Ranking, etc), usamos o modo analítico se solicitado
+        List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, analyticalMode);
+
+        long esforcoTotal = tarefasStatus.stream()
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        long esforcoConcluido = todas.stream()
+        long esforcoConcluido = tarefasPerformance.stream()
                 .filter(t -> t.getStatus() == Status.CONCLUIDA)
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        long aderenciaGestorSim = todas.stream()
+        long aderenciaGestorSim = tarefasPerformance.stream()
                 .filter(Tarefa::isPrevistoNoCargoGestor)
                 .count();
         
-        long aderenciaGestorNao = todas.stream()
+        long aderenciaGestorNao = tarefasPerformance.stream()
                 .filter(t -> !t.isPrevistoNoCargoGestor())
                 .count();
         
-        long aderenciaColabSim = todas.stream()
+        long aderenciaColabSim = tarefasPerformance.stream()
                 .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
                 .count();
 
@@ -244,7 +257,7 @@ public class TarefaController {
         long concluidasHorasEst = esforcoConcluido * 2;
 
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
-        todas.stream()
+        tarefasPerformance.stream()
             .filter(t -> t.getStatus() == Status.CONCLUIDA)
             .forEach(t -> {
                 Usuario executor = t.getConcluidoPor();
@@ -292,11 +305,11 @@ public class TarefaController {
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("total", (long) todas.size());
-        stats.put("pendente", todas.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
-        stats.put("em_andamento", todas.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
-        stats.put("concluida", todas.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count());
-        stats.put("atrasada", todas.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        stats.put("total", (long) tarefasStatus.size());
+        stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
+        stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        stats.put("concluida", tarefasStatus.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count());
+        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         stats.put("total_times", timeRepository.count());
         stats.put("esforco_total", esforcoTotal);
         stats.put("esforco_concluido", esforcoConcluido);

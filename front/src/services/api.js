@@ -30,5 +30,5 @@ module.exports = {
     getNotificacoes: (usuarioId) => api.get('/notificacoes', { params: { usuarioId } }),
     marcarNotificacoesComoLidas: (taskId, usuarioId) => api.patch(`/notificacoes/read-by-task/${taskId}`, null, { params: { usuarioId } }),
     
-    getStats: (startDate, endDate) => api.get('/tarefas/stats', { params: { startDate, endDate } })
+    getStats: (startDate, endDate, analyticalMode = false) => api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } })
 };
