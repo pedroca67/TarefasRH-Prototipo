@@ -68,6 +68,16 @@ app.use((req, res, next) => {
     next();
 });
 
+// Endpoint Interno para Polling de Notificações
+app.get('/api/internal/notificacoes/count', authMiddleware, async (req, res) => {
+    try {
+        const response = await apiService.getUnreadNotificationsCount(req.session.usuario.id);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ count: 0 });
+    }
+});
+
 // Rotas
 const apiService = require('./services/api');
 
@@ -220,6 +230,13 @@ app.get('/tarefas/:id', authMiddleware, async (req, res) => {
                 message: 'Ops! Você não tem autorização para visualizar esta tarefa.',
                 redirectUrl: '/dashboard'
             });
+        }
+
+        // Marcar notificações como lidas ao visualizar
+        try {
+            await apiService.marcarNotificacoesComoLidas(req.params.id, req.session.usuario.id);
+        } catch (nErr) {
+            console.error('Erro ao limpar notificações:', nErr.message);
         }
 
         res.render('tarefas/detalhes', { tarefa, currentPage: 'tarefas' });

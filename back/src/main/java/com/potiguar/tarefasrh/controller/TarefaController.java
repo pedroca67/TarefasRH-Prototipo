@@ -27,6 +27,7 @@ public class TarefaController {
     private final TarefaRepository tarefaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TimeRepository timeRepository;
+    private final com.potiguar.tarefasrh.repository.NotificacaoRepository notificacaoRepository;
     private final com.potiguar.tarefasrh.service.GoogleSheetsService googleSheetsService;
 
     private static final Map<String, Integer> PESO_ESFORCO = Map.of(
@@ -131,11 +132,40 @@ public class TarefaController {
     }
 
     @PutMapping("/{id}/feedback")
+    @Transactional
     public ResponseEntity<Tarefa> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return tarefaRepository.findById(id).map(t -> {
             t.setFeedbackGestor(body.get("feedback"));
             t.setDataFeedback(LocalDateTime.now());
             Tarefa salva = tarefaRepository.save(t);
+
+            // Gerar Notificações
+            String msg = "O gestor deixou um feedback na tarefa: " + t.getTitulo();
+            
+            // Notifica todos os responsáveis
+            t.getResponsaveis().forEach(u -> {
+                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
+                        .tipo("FEEDBACK")
+                        .mensagem(msg)
+                        .usuario(u)
+                        .referenciaId(t.getId())
+                        .build());
+            });
+
+            // Se for time, notifica todos do time
+            if (t.getTime() != null) {
+                usuarioRepository.findAll().stream()
+                        .filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
+                        .forEach(u -> {
+                            notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
+                                    .tipo("FEEDBACK")
+                                    .mensagem(msg)
+                                    .usuario(u)
+                                    .referenciaId(t.getId())
+                                    .build());
+                        });
+            }
+
             googleSheetsService.syncAllTasks();
             return ResponseEntity.ok(salva);
         }).orElse(ResponseEntity.notFound().build());

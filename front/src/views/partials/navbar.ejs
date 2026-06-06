@@ -40,10 +40,15 @@
       <i class="bi bi-grid-1x2"></i> <span><%= usuario.nivel === 'GESTOR' ? 'Dashboard' : 'Meu Workspace' %></span>
     </a>
     
+    <a href="/tarefas" class="nav-link-custom <%= currentPage === 'tarefas' ? 'active' : '' %> position-relative">
+      <i class="bi bi-card-checklist"></i> 
+      <span>Tarefas</span>
+      <span id="notificacaoBadge" class="position-absolute top-50 start-0 translate-middle badge rounded-pill bg-danger d-none" style="margin-left: 35px; margin-top: -10px; font-size: 0.6rem; z-index: 10;">
+        0
+      </span>
+    </a>
+
     <% if (usuario.nivel === 'GESTOR') { %>
-      <a href="/tarefas" class="nav-link-custom <%= currentPage === 'tarefas' ? 'active' : '' %>">
-        <i class="bi bi-card-checklist"></i> <span>Tarefas</span>
-      </a>
       <a href="/usuarios" class="nav-link-custom <%= currentPage === 'usuarios' ? 'active' : '' %>">
         <i class="bi bi-people"></i> <span>Usuários</span>
       </a>
@@ -60,6 +65,30 @@
     </a>
   </div>
 </div>
+
+<script>
+    // Polling de Notificações
+    async function atualizarBadgeNotificacoes() {
+        try {
+            const response = await fetch(`/api/internal/notificacoes/count`);
+            const data = await response.json();
+            const badge = document.getElementById('notificacaoBadge');
+            
+            if (data.count > 0) {
+                badge.innerText = data.count > 99 ? '99+' : data.count;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        } catch (err) {
+            console.error('Erro ao buscar notificações:', err);
+        }
+    }
+
+    // Atualiza ao carregar e a cada 30 segundos
+    atualizarBadgeNotificacoes();
+    setInterval(atualizarBadgeNotificacoes, 30000);
+</script>
 
 <div class="main-content" id="mainContent">
   <header class="top-header">
