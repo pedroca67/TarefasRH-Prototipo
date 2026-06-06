@@ -262,7 +262,17 @@
     <div class="col-12 col-xl-4">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-trophy me-2 text-warning"></i>Top Performers (Mês)</h6>
+                <% 
+                    const titulosPeriodo = {
+                        'todos': 'Histórico',
+                        'semana': 'Esta Semana',
+                        'mes': 'Este Mês',
+                        'ano': 'Este Ano',
+                        'personalizado': 'Período Personalizado'
+                    };
+                    const labelPeriodo = titulosPeriodo[filtro.periodo] || 'Mês';
+                %>
+                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-trophy me-2 text-warning"></i>Top Performers (<%= labelPeriodo %>)</h6>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
