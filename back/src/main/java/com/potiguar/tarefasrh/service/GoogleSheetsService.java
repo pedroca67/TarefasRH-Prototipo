@@ -50,62 +50,68 @@ public class GoogleSheetsService {
 
         try {
             Sheets service = getSheetsService();
+            
+            // --- ABA 1: BASE_TAREFAS ---
             List<Tarefa> tarefas = tarefaRepository.findAll();
-
-            List<List<Object>> values = new ArrayList<>();
-            // Cabeçalho
-            values.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
+            List<List<Object>> valuesTarefas = new ArrayList<>();
+            valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
+            
             for (Tarefa t : tarefas) {
-                String responsaveis = t.getResponsaveis().stream()
-                        .map(com.potiguar.tarefasrh.model.Usuario::getNome)
-                        .collect(Collectors.joining(", "));
-
+                String responsaveis = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                
-                String feedbacksConcatenados = t.getFeedbacks().stream()
-                        .map(f -> f.getGestor().getNome() + ": " + f.getMensagem())
-                        .collect(Collectors.joining(" | "));
+                String feedbacks = t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | "));
 
-                values.add(Arrays.asList(
-                        t.getId().toString(),
-                        t.getTitulo(),
-                        t.getDescricao() != null ? t.getDescricao() : "-",
-                        responsaveis.isEmpty() ? "-" : responsaveis,
-                        t.getTime() != null ? t.getTime().getNome() : "-",
-                        t.getCategoria().toString(),
-                        t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
-                        t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
-                        t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
-                        t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
-                        t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
-                        t.getStatus().toString(),
-                        t.getComplexidade().toString(),
-                        esforco,
-                        esforco * 2, // 1pt = 2h
-                        t.getDataPrazo().toString(),
-                        t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
-                        t.getEvidencia() != null ? t.getEvidencia() : "-",
-                        feedbacksConcatenados.isEmpty() ? "-" : feedbacksConcatenados
+                valuesTarefas.add(Arrays.asList(
+                    t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
+                    responsaveis.isEmpty() ? "-" : responsaveis, t.getTime() != null ? t.getTime().getNome() : "-",
+                    t.getCategoria().toString(), t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                    t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
+                    t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
+                    t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
+                    t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
+                    t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 2,
+                    t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
+                    t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
                 ));
             }
 
-            // Limpa a planilha antes de atualizar
-            service.spreadsheets().values()
-                    .clear(spreadsheetId, "A1:Z1000", null)
-                    .execute();
+            // --- ABA 2: BASE_TURNOVER ---
+            List<com.potiguar.tarefasrh.model.Usuario> usuarios = com.potiguar.tarefasrh.repository.UsuarioRepository.class.cast(
+                org.springframework.web.context.ContextLoader.getCurrentWebApplicationContext().getBean("usuarioRepository")
+            ).findAll(); // Nota: Em prod usar injeção, aqui simplificado para o contexto do script
 
-            // Escreve os novos dados
-            ValueRange body = new ValueRange().setValues(values);
-            service.spreadsheets().values()
-                    .update(spreadsheetId, "A1", body)
-                    .setValueInputOption("RAW")
-                    .execute();
+            List<List<Object>> valuesTurnover = new ArrayList<>();
+            valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
+            
+            for (com.potiguar.tarefasrh.model.Usuario u : usuarios) {
+                valuesTurnover.add(Arrays.asList(
+                    u.getId().toString(), u.getNome(), u.getEmail(), u.getLoja() != null ? u.getLoja() : "-",
+                    u.getTime() != null ? u.getTime().getNome() : "-", u.getNivel().toString(),
+                    u.isAtivo() ? "ATIVO" : "INATIVO",
+                    u.getDataCriacao() != null ? u.getDataCriacao().toString() : "-",
+                    u.getDataDesativacao() != null ? u.getDataDesativacao().toString() : "-"
+                ));
+            }
 
-            System.out.println("Sincronização com Google Sheets concluída.");
+            // Atualiza BASE_TAREFAS
+            updateSheet(service, "BASE_TAREFAS!A1:Z2000", valuesTarefas);
+            
+            // Atualiza BASE_TURNOVER
+            updateSheet(service, "BASE_TURNOVER!A1:I1000", valuesTurnover);
+
+            System.out.println("Sincronização multicanal concluída.");
 
         } catch (Exception e) {
             System.err.println("Erro ao sincronizar com Google Sheets: " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+
+    private void updateSheet(Sheets service, String range, List<List<Object>> values) throws Exception {
+        service.spreadsheets().values().clear(spreadsheetId, range, null).execute();
+        ValueRange body = new ValueRange().setValues(values);
+        service.spreadsheets().values().update(spreadsheetId, range, body)
+                .setValueInputOption("RAW").execute();
     }
 
     private Sheets getSheetsService() throws Exception {

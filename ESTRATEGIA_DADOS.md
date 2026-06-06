@@ -43,82 +43,33 @@ Este documento define a separação entre a camada **Operacional (Aplicativo)** 
 ---
 
 ## 🛠️ Fontes de Dados (Planilha Base)
-O Looker Studio deve ser conectado à planilha integrada, utilizando as colunas exportadas automaticamente pelo sistema:
+O Looker Studio deve ser conectado à planilha integrada através de duas fontes distintas (Abas):
 
-1.  **ID**: Identificador único da tarefa.
-2.  **Título**: Nome da atividade.
-3.  **Descrição**: Detalhamento do que foi solicitado.
-4.  **Responsável(is)**: Lista de nomes dos colaboradores atribuídos.
-5.  **Time**: Nome do setor/equipe responsável.
-6.  **Categoria**: Área do RH (Recrutamento, DP, etc).
-7.  **Previsto Cargo (Gestor)**: Expectativa inicial do gestor (SIM/NÃO).
-8.  **Previsto Cargo (Colab)**: Realidade percebida pelo executor na conclusão (SIM/NÃO).
-9.  **Criado Por**: Nome do usuário que abriu a tarefa.
-10. **Unidade do Criador**: Loja de origem da demanda.
-11. **Executor de Fato**: Nome de quem realmente marcou como concluída.
-12. **Status**: Estado atual (CONCLUIDA, ATRASADA, etc).
-13. **Complexidade**: Nível de dificuldade (BAIXA, MEDIA, ALTA).
-14. **Esforço (Pts)**: Pontuação de impacto (1, 3 ou 5).
-15. **Horas Est.**: Conversão de esforço em tempo (1pt = 2h).
-16. **Prazo**: Data limite original.
-17. **Conclusão**: Data e hora real da entrega.
-18. **Evidência**: Texto descritivo da entrega feita pelo colaborador.
-19. **Feedback Gestor**: Histórico consolidado de feedbacks dos gestores.
+### 1. Aba `BASE_TAREFAS`
+Contém o fluxo operacional detalhado. Use esta aba para todos os gráficos de produtividade.
+- **Colunas:** ID, Título, Descrição, Responsável(is), Time, Categoria, Previsto Cargo (Gestor), Previsto Cargo (Colab), Criado Por, Unidade do Criador, Executor de Fato, Status, Complexidade, Esforço (Pts), Horas Est., Prazo, Conclusão, Evidência, Feedback Gestor.
+
+### 2. Aba `BASE_TURNOVER`
+Contém o cadastro histórico da equipe. Use esta aba para análise de rotatividade.
+- **Colunas:** ID_Usuario, Nome, E-mail, Loja, Time, Nível, Status (ATIVO/INATIVO), Data_Admissao, Data_Desligamento.
 
 ---
 
 ## 🛠️ Guia de Configuração de Gráficos (Looker Studio)
 
-Para resolver o desafio da Potiguar, configure seus gráficos no Looker utilizando estas combinações de **Dimensões** e **Métricas**:
+### A. Usando a aba `BASE_TAREFAS`:
+1.  **Visão Geral (Scorecards):** `SUM(Esforço (Pts))`, `SUM(Horas Est.)`.
+2.  **Mismatch de Cargos (Pizza):** Dimensão `Previsto Cargo (Colab)`.
+3.  **Produtividade (Barras):** Dimensão `Categoria` | Métrica `SUM(Esforço (Pts))`.
+4.  **Mapa de Demandas:** Dimensão `Unidade do Criador`.
 
-### 1. Visão Geral de Impacto (Scorecards / Visão Geral)
-*   **Dado:** Total de Pontos de Impacto
-    *   **Métrica:** `SUM(Esforço (Pts))`
-*   **Dado:** Total de Horas Estimadas
-    *   **Métrica:** `SUM(Horas Est.)`
-*   **Dado:** Tarefas Atrasadas
-    *   **Métrica:** `COUNT(ID)` onde `Status = "ATRASADA"`
-
-### 2. O Mismatch de Cargos (Gráfico de Pizza ou Barras Empilhadas)
-*   **Objetivo:** Mostrar o "Gap" entre o que o gestor pede e o que o RH faz de fato.
-*   **Dimensão:** `Previsto Cargo (Colab)`
-*   **Métrica:** `COUNT(ID)`
-*   **Sort:** Descrescente por Valor.
-*   *Dica:* Use filtros para ver por `Time` ou `Unidade do Criador`.
-
-### 3. Produtividade por Área (Gráfico de Barras)
-*   **Objetivo:** Identificar qual categoria de RH consome mais esforço.
-*   **Dimensão:** `Categoria`
-*   **Métrica:** `SUM(Esforço (Pts))`
-*   **Sort:** Descrescente por Métrica.
-*   **Tipo:** Barras Horizontais.
-
-### 4. Ranking Histórico de Talentos (Tabela Dinâmica)
-*   **Linha (Dimensão):** `Executor de Fato`
-*   **Coluna (Dimensão):** `Conclusão` (Granularidade: Mês)
-*   **Métrica:** `SUM(Esforço (Pts))`
-*   **Sort:** Descrescente pelo Total.
-
-### 5. Tendência de Carga de Trabalho (Série Temporal)
-*   **Dimensão de Período:** `Prazo` ou `Conclusão`
-*   **Métrica:** `SUM(Horas Est.)`
-*   **Quebra de Dimensão:** `Status`
-*   *Insight:* Ver picos de demanda ao longo do mês.
-
-### 6. Mapa de Calor de Demandas (Google Maps / Gráfico de Mapa)
-*   **Dimensão:** `Unidade do Criador` (Ex: Cohama, Centro, Imperatriz)
-*   **Métrica:** `COUNT(ID)`
-*   *Insight:* Visualizar quais lojas de São Luís e Interior geram mais demandas para o RH.
-
-### 7. Funil de Eficiência (Gráfico de Funil)
-*   **Dimensão:** `Status` (Etapas: PENDENTE -> EM_ANDAMENTO -> CONCLUIDA)
-*   **Métrica:** `COUNT(ID)`
-*   *Insight:* Ver em qual etapa as tarefas estão ficando "travadas".
-
-### 8. Detalhamento de Auditoria (Tabela)
-*   **Dimensões:** `Título`, `Executor de Fato`, `Conclusão`, `Evidência`, `Feedback Gestor`.
-*   **Métrica:** `Esforço (Pts)`
-*   **Sort:** `Conclusão` (Mais recente primeiro).
+### B. Usando a aba `BASE_TURNOVER`:
+1.  **Taxa de Turnover (Série Temporal):**
+    *   **Dimensão de Período:** `Data_Admissao` (para crescimento) ou `Data_Desligamento` (para perda).
+    *   **Métrica:** `COUNT(ID_Usuario)`.
+2.  **Movimentação por Loja (Barras):**
+    *   **Dimensão:** `Loja`.
+    *   **Métrica:** `COUNT(ID_Usuario)` onde `Status = "INATIVO"`.
 
 ---
 
