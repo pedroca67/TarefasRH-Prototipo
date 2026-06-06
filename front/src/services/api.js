@@ -11,16 +11,16 @@ module.exports = {
     // Usuários
     getUsuarios: () => api.get('/usuarios'),
     getUsuario: (id) => api.get(`/usuarios/${id}`),
-    salvarUsuario: (usuario) => api.post('/usuarios', usuario),
+    salvarUsuario: (dados) => api.post('/usuarios', dados),
     toggleUsuarioStatus: (id) => api.patch(`/usuarios/${id}/status`),
 
     // Times
     getTimes: () => api.get('/times'),
 
     // Tarefas
-    getTarefas: (responsavelId, timeId) => api.get('/tarefas', { params: { responsavelId, timeId } }),
+    getTarefas: (responsavelId, timeId, startDate, endDate) => api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate } }),
     getTarefa: (id) => api.get(`/tarefas/${id}`),
-    criarTarefa: (tarefa) => api.post('/tarefas', tarefa),
+    criarTarefa: (dados) => api.post('/tarefas', dados),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),
     getFeedbacks: (id) => api.get(`/tarefas/${id}/feedbacks`),
@@ -30,5 +30,5 @@ module.exports = {
     getNotificacoes: (usuarioId) => api.get('/notificacoes', { params: { usuarioId } }),
     marcarNotificacoesComoLidas: (taskId, usuarioId) => api.patch(`/notificacoes/read-by-task/${taskId}`, null, { params: { usuarioId } }),
     
-    getStats: () => api.get('/tarefas/stats')
+    getStats: (startDate, endDate) => api.get('/tarefas/stats', { params: { startDate, endDate } })
 };

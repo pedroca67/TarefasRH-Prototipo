@@ -138,48 +138,80 @@ app.get('/perfil', authMiddleware, async (req, res) => {
 
 app.get('/dashboard', authMiddleware, async (req, res) => {
     try {
-        if (req.session.usuario.nivel === 'GESTOR') {
-            const stats = (await apiService.getStats()).data;
-            const tarefas = (await apiService.getTarefas()).data;
-            const times = (await apiService.getTimes()).data;
-            res.render('dashboard/gestor', { stats, tarefas, times, currentPage: 'dashboard' });
+        // Lógica de Filtro de Período
+        let { periodo, dataDe, dataAte } = req.query;
+        
+        // Se não vier na query, tenta pegar da sessão
+        if (!periodo) {
+            periodo = req.session.filtroPeriodo || 'todos';
+            dataDe = req.session.filtroDataDe;
+            dataAte = req.session.filtroDataAte;
         } else {
-            const minhasTarefas = (await apiService.getTarefas(req.session.usuario.id)).data;
+            // Salva na sessão o novo filtro
+            req.session.filtroPeriodo = periodo;
+            req.session.filtroDataDe = dataDe;
+            req.session.filtroDataAte = dataAte;
+        }
+
+        let startDate, endDate;
+        const hoje = new Date();
+
+        if (periodo === 'semana') {
+            const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
+            const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
+            startDate = primeira.toISOString().split('T')[0];
+            endDate = ultima.toISOString().split('T')[0];
+        } else if (periodo === 'mes') {
+            startDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+            endDate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+        } else if (periodo === 'ano') {
+            startDate = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
+            endDate = new Date(hoje.getFullYear(), 11, 31).toISOString().split('T')[0];
+        } else if (periodo === 'personalizado') {
+            startDate = dataDe;
+            endDate = dataAte;
+        }
+
+        const filtroFormatado = { periodo, dataDe, dataAte };
+
+        if (req.session.usuario.nivel === 'GESTOR') {
+            const stats = (await apiService.getStats(startDate, endDate)).data;
+            const tarefas = (await apiService.getTarefas(null, null, startDate, endDate)).data;
+            const times = (await apiService.getTimes()).data;
+            res.render('dashboard/gestor', { stats, tarefas, times, filtro: filtroFormatado, currentPage: 'dashboard' });
+        } else {
+            const minhasTarefas = (await apiService.getTarefas(req.session.usuario.id, null, startDate, endDate)).data;
             let tarefasTime = [];
             if (req.session.usuario.time) {
-                tarefasTime = (await apiService.getTarefas(null, req.session.usuario.time.id)).data;
+                tarefasTime = (await apiService.getTarefas(null, req.session.usuario.time.id, startDate, endDate)).data;
             }
 
-            // Cálculo de métricas pessoais
+            // Cálculo de métricas pessoais (respeitando o filtro de período)
             const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
             const minhasConcluidas = minhasTarefas.filter(t => t.status === 'CONCLUIDA');
             
             const impactoMensal = minhasConcluidas.reduce((acc, t) => {
-                const dataConc = new Date(t.dataConclusao);
-                const hoje = new Date();
-                if (dataConc.getMonth() === hoje.getMonth() && dataConc.getFullYear() === hoje.getFullYear()) {
-                    return acc + (pesoEsforco[t.complexidade] || 0);
-                }
-                return acc;
+                return acc + (pesoEsforco[t.complexidade] || 0);
             }, 0);
 
             const aderenciaSim = minhasConcluidas.filter(t => t.previstoNoCargoColaborador === true).length;
             const totalAderenciaResp = minhasConcluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
             const aderenciaPessoal = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
 
-            // Identificar Entrega Crítica (mais próxima do prazo)
+            // Identificar Entrega Crítica (mais próxima do prazo, entre as filtradas)
             const proximas = minhasTarefas
                 .filter(t => t.status !== 'CONCLUIDA')
                 .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo));
             const entregaCritica = proximas.length > 0 ? proximas[0] : null;
 
             res.render('dashboard/colaborador', { 
-                tarefas: minhasTarefas, // Para os cards de estatísticas
+                tarefas: minhasTarefas,
                 minhasTarefas, 
                 tarefasTime, 
                 impactoMensal,
                 aderenciaPessoal,
                 entregaCritica,
+                filtro: filtroFormatado,
                 currentPage: 'dashboard' 
             });
         }
