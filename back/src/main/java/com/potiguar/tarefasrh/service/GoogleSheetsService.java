@@ -96,7 +96,6 @@ public class GoogleSheetsService {
             List<List<Object>> valuesResumo = new ArrayList<>();
             valuesResumo.add(Arrays.asList("Mês/Ano", "Capacidade Total (Horas)", "Horas Entregues (Produtividade Real)"));
             
-            long activeUsers = usuarios.stream().filter(com.potiguar.tarefasrh.model.Usuario::isAtivo).count();
             // Agrupar horas entregues por mês
             Map<String, Double> horasPorMes = tarefas.stream()
                 .filter(t -> t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getDataConclusao() != null)
@@ -110,11 +109,30 @@ public class GoogleSheetsService {
             for (int i = 0; i < 12; i++) {
                 java.time.YearMonth targetMonth = currentMonth.minusMonths(i);
                 String key = targetMonth.getYear() + "-" + String.format("%02d", targetMonth.getMonthValue());
+                
+                // Cálculo dinâmico de funcionários ativos NAQUELE mês específico
+                long employeesActiveInMonth = usuarios.stream().filter(u -> {
+                    java.time.LocalDateTime admission = u.getDataCriacao();
+                    java.time.LocalDateTime deactivation = u.getDataDesativacao();
+                    
+                    // Admitido até o fim do mês alvo
+                    boolean admitted = admission != null && 
+                                     (admission.getYear() < targetMonth.getYear() || 
+                                     (admission.getYear() == targetMonth.getYear() && admission.getMonthValue() <= targetMonth.getMonthValue()));
+                    
+                    // Ainda não desativado OU desativado após o início do mês alvo
+                    boolean notYetDeactivated = deactivation == null || 
+                                              (deactivation.getYear() > targetMonth.getYear() || 
+                                              (deactivation.getYear() == targetMonth.getYear() && deactivation.getMonthValue() >= targetMonth.getMonthValue()));
+                    
+                    return admitted && notYetDeactivated;
+                }).count();
+
                 double entregue = horasPorMes.getOrDefault(key, 0.0);
                 
                 valuesResumo.add(Arrays.asList(
                     key,
-                    activeUsers * 160, // Média de 160h mensais por colaborador
+                    employeesActiveInMonth * 160, // Horas base baseadas no time da época
                     entregue
                 ));
             }

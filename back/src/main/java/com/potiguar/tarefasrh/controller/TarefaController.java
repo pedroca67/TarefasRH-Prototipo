@@ -42,7 +42,9 @@ public class TarefaController {
     private List<Tarefa> atualizarStatusAtrasadas(List<Tarefa> tarefas) {
         LocalDate hoje = LocalDate.now();
         return tarefas.stream().peek(t -> {
-            if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje)) {
+            // Só muda para ATRASADA se estiver PENDENTE e o prazo passou.
+            // Se estiver EM_ANDAMENTO, mantém o status mas o front cuidará da sinalização visual.
+            if (t.getStatus() == Status.PENDENTE && t.getDataPrazo().isBefore(hoje)) {
                 t.setStatus(Status.ATRASADA);
             }
         }).collect(Collectors.toList());
