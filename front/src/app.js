@@ -167,12 +167,19 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
             const totalAderenciaResp = minhasConcluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
             const aderenciaPessoal = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
 
+            // Identificar Entrega Crítica (mais próxima do prazo)
+            const proximas = minhasTarefas
+                .filter(t => t.status !== 'CONCLUIDA')
+                .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo));
+            const entregaCritica = proximas.length > 0 ? proximas[0] : null;
+
             res.render('dashboard/colaborador', { 
                 tarefas: minhasTarefas, // Para os cards de estatísticas
                 minhasTarefas, 
                 tarefasTime, 
                 impactoMensal,
                 aderenciaPessoal,
+                entregaCritica,
                 currentPage: 'dashboard' 
             });
         }
