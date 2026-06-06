@@ -32,11 +32,12 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'potiguar_rh_secret_key_123',
     resave: true,
     saveUninitialized: true,
+    rolling: true, // Renova o tempo de vida do cookie a cada interação
     name: 'tarefasrh.sid',
     cookie: {
         secure: isProduction,
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24,
+        maxAge: 1000 * 60 * 90, // 90 minutos (1h 30m)
         sameSite: isProduction ? 'none' : 'lax'
     }
 }));
