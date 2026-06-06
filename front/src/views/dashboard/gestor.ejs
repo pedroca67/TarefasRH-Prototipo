@@ -269,22 +269,40 @@
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-pie-chart me-2"></i>Status</h6>
             </div>
-            <div class="card-body d-flex flex-column align-items-center justify-content-center py-2">
-                <div style="position: relative; height: 140px; width: 140px;">
+            <div class="card-body d-flex flex-column align-items-center justify-content-evenly py-3">
+                <div style="position: relative; height: 160px; width: 160px;">
                     <canvas id="statusChart"></canvas>
                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                        <div class="fw-bold" style="font-size: 1.5rem; line-height: 1;"><%= stats.total %></div>
-                        <div class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</div>
+                        <div class="fw-bold" style="font-size: 1.8rem; line-height: 1;"><%= stats.total %></div>
+                        <div class="text-muted fw-bold" style="font-size: 0.7rem;">TOTAL</div>
                     </div>
                 </div>
                 
-                <div class="mt-2 w-100">
-                    <div class="row g-1 text-center" style="font-size: 0.75rem;">
-                        <div class="col-12 mb-1">
-                            <span class="badge w-100 text-dark border" style="background-color: #ffffff;"><span class="badge" style="background-color: #198754; width: 8px; height: 8px; padding: 0; border-radius: 50%; display: inline-block;"></span> Concluídas: <%= stats.concluida %></span>
+                <div class="w-100 px-2">
+                    <div class="row g-2 text-center" style="font-size: 0.75rem;">
+                        <div class="col-6">
+                            <div class="p-1 border rounded bg-white d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                                <span style="background-color: #ffc107; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                                <span class="text-truncate">Pend: <%= stats.pendente %></span>
+                            </div>
                         </div>
-                        <div class="col-12">
-                            <span class="badge w-100 text-dark border" style="background-color: #ffffff;"><span class="badge" style="background-color: #dc3545; width: 8px; height: 8px; padding: 0; border-radius: 50%; display: inline-block;"></span> Atrasadas: <%= stats.atrasada %></span>
+                        <div class="col-6">
+                            <div class="p-1 border rounded bg-white d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                                <span style="background-color: #0d6efd; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                                <span class="text-truncate">And: <%= stats.em_andamento %></span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-1 border rounded bg-white d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                                <span style="background-color: #198754; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                                <span class="text-truncate">Conc: <%= stats.concluida %></span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-1 border rounded bg-white d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                                <span style="background-color: #dc3545; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+                                <span class="text-truncate">Atra: <%= stats.atrasada %></span>
+                            </div>
                         </div>
                     </div>
                 </div>
