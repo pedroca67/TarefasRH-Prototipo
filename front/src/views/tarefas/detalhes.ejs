@@ -16,7 +16,7 @@
                 <% } %>
             </h1>
             <p class="text-muted small">
-              <i class="bi bi-calendar-event me-1"></i>Criada em: <%= new Date(tarefa.dataCriacao).toLocaleString('pt-BR') %>
+              <i class="bi bi-calendar-event me-1"></i>Criada em: <%= new Date(tarefa.dataCriacao).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %>
               <% if (tarefa.criadoPor) { %>
                 <span class="ms-3"><i class="bi bi-person-badge me-1"></i>Por: <strong><%= tarefa.criadoPor.nome %></strong></span>
               <% } %>
@@ -108,7 +108,7 @@
             <% if (tarefa.dataConclusao) { %>
                 <hr>
                 <p class="mb-0 small text-muted">
-                    <i class="bi bi-calendar-check me-1"></i> Finalizada em: <strong><%= new Date(tarefa.dataConclusao).toLocaleString('pt-BR') %></strong>
+                    <i class="bi bi-calendar-check me-1"></i> Finalizada em: <strong><%= new Date(tarefa.dataConclusao).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %></strong>
                 </p>
             <% } %>
           </div>
@@ -121,7 +121,7 @@
               <p class="mb-0 text-secondary" style="font-style: italic;">"<%= tarefa.feedbackGestor %>"</p>
               <% if (tarefa.dataFeedback) { %>
                 <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
-                    <i class="bi bi-clock me-1"></i> Recebido em: <%= new Date(tarefa.dataFeedback).toLocaleString('pt-BR') %>
+                    <i class="bi bi-clock me-1"></i> Recebido em: <%= new Date(tarefa.dataFeedback).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %>
                 </small>
               <% } %>
             </div>
