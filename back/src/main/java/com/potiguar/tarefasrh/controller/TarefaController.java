@@ -73,6 +73,10 @@ public class TarefaController {
     public Map<String, Object> listar(
             @RequestParam(required = false) Long responsavelId,
             @RequestParam(required = false) Long timeId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Status status,
+            @RequestParam(required = false) Complexidade complexidade,
+            @RequestParam(required = false) Categoria categoria,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
@@ -88,17 +92,32 @@ public class TarefaController {
         } else {
             tarefas = tarefaRepository.findAll();
         }
+
+        // 1. Filtragem por busca textual, status, complexidade e categoria (Server-Side)
+        if (search != null && !search.isBlank()) {
+            String s = search.toLowerCase();
+            tarefas = tarefas.stream().filter(t -> t.getTitulo().toLowerCase().contains(s)).collect(Collectors.toList());
+        }
+        if (status != null) {
+            tarefas = tarefas.stream().filter(t -> t.getStatus() == status).collect(Collectors.toList());
+        }
+        if (complexidade != null) {
+            tarefas = tarefas.stream().filter(t -> t.getComplexidade() == complexidade).collect(Collectors.toList());
+        }
+        if (categoria != null) {
+            tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
+        }
         
-        // 1. Filtragem por período
+        // 2. Filtragem por período
         tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
         
-        // 2. Atualização de status para a visualização
+        // 3. Atualização de status para a visualização
         tarefas = atualizarStatusAtrasadas(tarefas);
 
-        // 3. Ordenação padrão (mais recentes primeiro)
+        // 4. Ordenação padrão (mais recentes primeiro)
         tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
 
-        // 4. Paginação manual (para manter a lógica de filtros flexíveis do protótipo)
+        // 5. Paginação
         int totalItems = tarefas.size();
         int totalPages = (int) Math.ceil((double) totalItems / size);
         int start = Math.min(page * size, totalItems);
