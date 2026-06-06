@@ -256,6 +256,18 @@ app.post('/tarefas/:id/status', authMiddleware, async (req, res) => {
     }
 });
 
+app.post('/tarefas/:id/feedback', authMiddleware, gestorMiddleware, async (req, res) => {
+    try {
+        const { feedback } = req.body;
+        await apiService.enviarFeedback(req.params.id, feedback);
+        req.session.success = 'Feedback enviado com sucesso!';
+        res.redirect(`/tarefas/${req.params.id}`);
+    } catch (error) {
+        req.session.error = 'Erro ao enviar feedback.';
+        res.redirect(`/tarefas/${req.params.id}`);
+    }
+});
+
 // Usuários
 app.get('/usuarios', authMiddleware, gestorMiddleware, async (req, res) => {
     try {

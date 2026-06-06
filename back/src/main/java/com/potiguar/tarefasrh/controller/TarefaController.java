@@ -130,8 +130,19 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}/feedback")
+    public ResponseEntity<Tarefa> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return tarefaRepository.findById(id).map(t -> {
+            t.setFeedbackGestor(body.get("feedback"));
+            t.setDataFeedback(LocalDateTime.now());
+            Tarefa salva = tarefaRepository.save(t);
+            googleSheetsService.syncAllTasks();
+            return ResponseEntity.ok(salva);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/stats")
-    public Map<String, Long> getStats() {
+    public Map<String, Object> getStats() {
         List<Tarefa> todas = tarefaRepository.findAll();
         
         // Atualiza todas para contar corretamente (simplificado para protótipo)
@@ -158,6 +169,10 @@ public class TarefaController {
                 .filter(Tarefa::isPrevistoNoCargoGestor)
                 .count();
         
+        long aderenciaGestorNao = todas.stream()
+                .filter(t -> !t.isPrevistoNoCargoGestor())
+                .count();
+        
         // Métrica macro baseada no Colaborador (Realidade)
         long aderenciaColabSim = todas.stream()
                 .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
@@ -166,7 +181,37 @@ public class TarefaController {
         long totalHorasEst = esforcoTotal * 2;
         long concluidasHorasEst = esforcoConcluido * 2;
 
-        Map<String, Long> stats = new HashMap<>();
+        // Lógica do Ranking do Mês Atual
+        LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
+        Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
+        
+        todas.stream()
+            .filter(t -> t.getStatus() == Status.CONCLUIDA)
+            .filter(t -> t.getDataConclusao() != null && t.getDataConclusao().toLocalDate().isAfter(inicioMes.minusDays(1)))
+            .forEach(t -> {
+                Usuario executor = t.getConcluidoPor();
+                if (executor == null && !t.getResponsaveis().isEmpty()) {
+                    executor = t.getResponsaveis().get(0);
+                }
+                if (executor != null) {
+                    long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                    pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
+                }
+            });
+
+        List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
+                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                .limit(5)
+                .map(e -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("nome", e.getKey().getNome());
+                    item.put("fotoUrl", e.getKey().getFotoUrl());
+                    item.put("pontos", e.getValue());
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> stats = new HashMap<>();
         stats.put("total", (long) todas.size());
         stats.put("pendente", todas.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
         stats.put("em_andamento", todas.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
@@ -176,9 +221,11 @@ public class TarefaController {
         stats.put("esforco_total", esforcoTotal);
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
+        stats.put("aderencia_gestor_nao", aderenciaGestorNao);
         stats.put("aderencia_colab_sim", aderenciaColabSim);
         stats.put("total_horas_est", totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
+        stats.put("ranking", ranking);
         
         return stats;
     }

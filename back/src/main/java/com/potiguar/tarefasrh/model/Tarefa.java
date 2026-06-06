@@ -69,6 +69,12 @@ public class Tarefa {
     @Column(name = "data_conclusao")
     private LocalDateTime dataConclusao;
 
+    @Column(columnDefinition = "TEXT")
+    private String feedbackGestor;
+
+    @Column(name = "data_feedback")
+    private LocalDateTime dataFeedback;
+
     @ManyToOne
     @JoinColumn(name = "concluido_por")
     private Usuario concluidoPor;

@@ -114,6 +114,34 @@
           </div>
         <% } %>
 
+        <% if (tarefa.feedbackGestor) { %>
+          <div class="card border-warning mt-4 shadow-sm" style="background-color: #fffdf0;">
+            <div class="card-body">
+              <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-quote me-2 text-warning"></i>Feedback do Gestor</h6>
+              <p class="mb-0 text-secondary" style="font-style: italic;">"<%= tarefa.feedbackGestor %>"</p>
+              <% if (tarefa.dataFeedback) { %>
+                <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-clock me-1"></i> Recebido em: <%= new Date(tarefa.dataFeedback).toLocaleString('pt-BR') %>
+                </small>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+
+        <% if (usuario.nivel === 'GESTOR' && tarefa.status === 'CONCLUIDA' && !tarefa.feedbackGestor) { %>
+          <div class="card bg-light border-0 mt-4 shadow-sm">
+            <div class="card-body">
+              <h6 class="fw-bold text-potiguar mb-3"><i class="bi bi-patch-check me-2"></i>Avaliar Conclusão (Feedback)</h6>
+              <form action="/tarefas/<%= tarefa.id %>/feedback" method="POST">
+                <div class="mb-3">
+                  <textarea class="form-control" name="feedback" rows="2" placeholder="Escreva um feedback construtivo sobre a entrega..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-sm btn-potiguar fw-bold px-4">Enviar Feedback</button>
+              </form>
+            </div>
+          </div>
+        <% } %>
+
         <% 
           const isResponsavel = (tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === usuario.id)) || 
                                (tarefa.time && usuario.time && tarefa.time.id === usuario.time.id);

@@ -54,7 +54,7 @@ public class GoogleSheetsService {
 
             List<List<Object>> values = new ArrayList<>();
             // Cabeçalho
-            values.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência"));
+            values.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             for (Tarefa t : tarefas) {
                 String responsaveis = t.getResponsaveis().stream()
                         .map(com.potiguar.tarefasrh.model.Usuario::getNome)
@@ -80,7 +80,8 @@ public class GoogleSheetsService {
                         esforco * 2, // 1pt = 2h
                         t.getDataPrazo().toString(),
                         t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
-                        t.getEvidencia() != null ? t.getEvidencia() : "-"
+                        t.getEvidencia() != null ? t.getEvidencia() : "-",
+                        t.getFeedbackGestor() != null ? t.getFeedbackGestor() : "-"
                 ));
             }
 

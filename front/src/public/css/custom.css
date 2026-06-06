@@ -389,3 +389,12 @@ body {
 .text-potiguar-yellow {
     color: var(--potiguar-yellow) !important;
 }
+
+/* Animações e Transições */
+.transition-transform {
+    transition: transform 0.3s ease;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}

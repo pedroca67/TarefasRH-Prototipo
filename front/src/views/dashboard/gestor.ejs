@@ -182,7 +182,7 @@
 <!-- Seções de Monitoramento Expandidas -->
 <div class="row g-3 flex-grow-1">
     <!-- Coluna: Atenção Prioritária (Atrasadas) -->
-    <div class="col-12 col-xl-8">
+    <div class="col-12 col-xl-5">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-fire me-2"></i>Atenção Prioritária</h6>
@@ -190,11 +190,10 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0" style="font-size: 0.95rem;">
+                    <table class="table table-hover mb-0" style="font-size: 0.85rem;">
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-3 py-2">Tarefa</th>
-                                <th class="py-2">Responsáveis</th>
                                 <th class="py-2">Prazo</th>
                                 <th class="text-end pe-3 py-2">Ação</th>
                             </tr>
@@ -204,20 +203,13 @@
                                 const atrasadasPrioritarias = tarefas
                                     .filter(t => t.status === 'ATRASADA')
                                     .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo))
-                                    .slice(0, 5);
+                                    .slice(0, 4);
                             %>
                             <% if (atrasadasPrioritarias.length > 0) { %>
                                 <% atrasadasPrioritarias.forEach(t => { %>
                                     <tr class="align-middle">
                                         <td class="ps-3 py-2">
-                                            <div class="fw-bold text-dark text-truncate" style="max-width: 300px;"><%= t.titulo %></div>
-                                        </td>
-                                        <td class="py-2">
-                                            <% if (t.responsaveis && t.responsaveis.length > 0) { %>
-                                                <span class="fw-bold"><%= t.responsaveis.slice(0, 2).map(r => r.nome.split(' ')[0]).join(', ') %></span><% if (t.responsaveis.length > 2) { %> <span class="text-muted">+<%= t.responsaveis.length - 2 %></span><% } %>
-                                            <% } else { %>
-                                                <span class="text-muted fw-bold"><%= t.time ? t.time.nome : '-' %></span>
-                                            <% } %>
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 180px;"><%= t.titulo %></div>
                                         </td>
                                         <td class="py-2"><span class="text-danger fw-bold"><%= new Date(t.dataPrazo).toLocaleDateString('pt-BR') %></span></td>
                                         <td class="text-end pe-3 py-2">
@@ -226,7 +218,7 @@
                                     </tr>
                                 <% }) %>
                             <% } else { %>
-                                <tr><td colspan="4" class="text-center py-4 text-muted fw-bold">🎉 Nenhuma tarefa atrasada!</td></tr>
+                                <tr><td colspan="3" class="text-center py-4 text-muted fw-bold small">🎉 Nenhuma tarefa atrasada!</td></tr>
                             <% } %>
                         </tbody>
                     </table>
@@ -235,34 +227,64 @@
         </div>
     </div>
 
-    <!-- Coluna: Distribuição por Status (Gráfico Expandido) -->
+    <!-- Coluna: Ranking de Talentos (NOVO) -->
     <div class="col-12 col-xl-4">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-pie-chart me-2"></i>Distribuição de Status</h6>
+                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-trophy me-2 text-warning"></i>Top Performers (Mês)</h6>
             </div>
-            <div class="card-body d-flex flex-column align-items-center justify-content-between py-3">
-                <div style="position: relative; height: 200px; width: 200px;">
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <% if (stats.ranking && stats.ranking.length > 0) { %>
+                        <% stats.ranking.forEach((user, index) => { %>
+                            <div class="list-group-item d-flex align-items-center py-2 px-3">
+                                <div class="me-3 position-relative">
+                                    <img src="<%= user.fotoUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.nome.replace(' ', '') %>" 
+                                         class="rounded-circle border" width="35" height="35">
+                                    <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill <%= index === 0 ? 'bg-warning' : index === 1 ? 'bg-secondary' : index === 2 ? 'bg-bronze' : 'bg-light text-dark border' %>" 
+                                          style="font-size: 0.6rem; <%= index === 2 ? 'background-color: #cd7f32 !important;' : '' %>">
+                                        <%= index + 1 %>º
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-dark small"><%= user.nome.split(' ')[0] %></div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Pontos de Impacto</div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-light text-potiguar border fw-bold" style="font-size: 0.85rem;"><%= user.pontos %></span>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="text-center py-4 text-muted small">Aguardando conclusões do mês...</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna: Distribuição por Status (Gráfico) -->
+    <div class="col-12 col-xl-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-potiguar"><i class="bi bi-pie-chart me-2"></i>Status</h6>
+            </div>
+            <div class="card-body d-flex flex-column align-items-center justify-content-center py-2">
+                <div style="position: relative; height: 140px; width: 140px;">
                     <canvas id="statusChart"></canvas>
                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                        <div class="fw-bold" style="font-size: 2.2rem; line-height: 1;"><%= stats.total %></div>
-                        <div class="text-muted fw-bold" style="font-size: 0.85rem;">TOTAL</div>
+                        <div class="fw-bold" style="font-size: 1.5rem; line-height: 1;"><%= stats.total %></div>
+                        <div class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</div>
                     </div>
                 </div>
                 
-                <div class="mt-3 w-100">
-                    <div class="row g-2 text-center">
-                        <div class="col-6">
-                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #ffc107; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Pendente: <strong><%= stats.pendente %></strong></div>
+                <div class="mt-2 w-100">
+                    <div class="row g-1 text-center" style="font-size: 0.75rem;">
+                        <div class="col-12 mb-1">
+                            <span class="badge w-100 text-dark border" style="background-color: #ffffff;"><span class="badge" style="background-color: #198754; width: 8px; height: 8px; padding: 0; border-radius: 50%; display: inline-block;"></span> Concluídas: <%= stats.concluida %></span>
                         </div>
-                        <div class="col-6">
-                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #0d6efd; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Em Andamento: <strong><%= stats.em_andamento %></strong></div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #198754; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Concluída: <strong><%= stats.concluida %></strong></div>
-                        </div>
-                        <div class="col-6">
-                            <div class="small" style="font-size: 0.85rem;"><span class="badge" style="background-color: #dc3545; width: 10px; height: 10px; padding: 0; border-radius: 50%; display: inline-block; margin-right: 4px;"></span> Atrasada: <strong><%= stats.atrasada %></strong></div>
+                        <div class="col-12">
+                            <span class="badge w-100 text-dark border" style="background-color: #ffffff;"><span class="badge" style="background-color: #dc3545; width: 8px; height: 8px; padding: 0; border-radius: 50%; display: inline-block;"></span> Atrasadas: <%= stats.atrasada %></span>
                         </div>
                     </div>
                 </div>
