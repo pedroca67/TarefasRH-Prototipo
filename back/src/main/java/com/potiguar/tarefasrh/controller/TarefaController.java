@@ -253,7 +253,16 @@ public class TarefaController {
                 .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
                 .count();
 
-        long totalHorasEst = usuarioRepository.countByAtivoTrue() * 40;
+        long activeUsers = usuarioRepository.countByAtivoTrue();
+        long totalHorasEst;
+        if (startDate != null && endDate != null) {
+            long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+            // Base: 40h por semana (7 dias)
+            totalHorasEst = activeUsers * (days * 40 / 7);
+        } else {
+            totalHorasEst = activeUsers * 40; // Padrão semanal se não houver filtro
+        }
+        
         long concluidasHorasEst = esforcoConcluido * 2;
 
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
