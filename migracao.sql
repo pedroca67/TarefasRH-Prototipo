@@ -19,7 +19,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO time (id, nome) VALUES 
 (1, 'Recrutamento e Seleção'), (2, 'Departamento Pessoal'), 
 (3, 'Treinamento e Desenvolvimento'), (4, 'Benefícios');
-
+-- 2. GESTOR (Admitido em Jan/2024) - Senha: admin123
 INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao) VALUES 
 (1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.TVuHOn2', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00');
 
@@ -33,18 +33,18 @@ BEGIN
     DECLARE r_loja VARCHAR(50);
     DECLARE r_ativo TINYINT(1);
     DECLARE r_data_admissao DATETIME;
-    
+
     WHILE i < qtd DO
         SET r_time = FLOOR(1 + (RAND() * 4));
         SET r_loja = ELT(FLOOR(1 + (RAND() * 5)), 'Cohama', 'Forquilha', 'Centro', 'Africanos', 'Imperatriz');
         SET r_data_admissao = DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 600) DAY);
         SET r_ativo = IF(RAND() > 0.1, 1, 0); 
-        
+
         INSERT INTO usuario (nome, email, senha, nivel, loja, time_id, foto_url, ativo, data_criacao, data_desativacao)
         VALUES (
             CONCAT('Colaborador ', i+2),
             CONCAT('user', i+2, '@potiguar.com.br'),
-            '$2a$10$vD9C.tK6w8J/ZJ0rXv9FxeU7lZ4Y8u3lJ5iZ5Wp1L8k5n9y6e4XG6',
+            '$2a$10$vD9C.tK6w8J/ZJ0rXv9FxeU7lZ4Y8u3lJ5iZ5Wp1L8k5n9y6e4XG6', -- Senha: 123456
             'COLABORADOR',
             r_loja,
             r_time,
