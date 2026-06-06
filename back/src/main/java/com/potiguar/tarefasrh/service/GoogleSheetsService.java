@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class GoogleSheetsService {
 
     private final TarefaRepository tarefaRepository;
+    private final com.potiguar.tarefasrh.repository.UsuarioRepository usuarioRepository;
 
     @Value("${google.sheets.id:}")
     private String spreadsheetId;
@@ -76,9 +77,7 @@ public class GoogleSheetsService {
             }
 
             // --- ABA 2: BASE_TURNOVER ---
-            List<com.potiguar.tarefasrh.model.Usuario> usuarios = com.potiguar.tarefasrh.repository.UsuarioRepository.class.cast(
-                org.springframework.web.context.ContextLoader.getCurrentWebApplicationContext().getBean("usuarioRepository")
-            ).findAll(); // Nota: Em prod usar injeção, aqui simplificado para o contexto do script
+            List<com.potiguar.tarefasrh.model.Usuario> usuarios = usuarioRepository.findAll();
 
             List<List<Object>> valuesTurnover = new ArrayList<>();
             valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
@@ -93,13 +92,43 @@ public class GoogleSheetsService {
                 ));
             }
 
+            // --- ABA 3: RESUMO_METRICAS (ESTRATÉGICO) ---
+            List<List<Object>> valuesResumo = new ArrayList<>();
+            valuesResumo.add(Arrays.asList("Mês/Ano", "Capacidade Total (Horas)", "Horas Entregues (Produtividade Real)"));
+            
+            long activeUsers = usuarios.stream().filter(com.potiguar.tarefasrh.model.Usuario::isAtivo).count();
+            // Agrupar horas entregues por mês
+            Map<String, Double> horasPorMes = tarefas.stream()
+                .filter(t -> t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getDataConclusao() != null)
+                .collect(Collectors.groupingBy(
+                    t -> t.getDataConclusao().getYear() + "-" + String.format("%02d", t.getDataConclusao().getMonthValue()),
+                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 2.0)
+                ));
+
+            // Adicionar os últimos 12 meses ao resumo
+            java.time.YearMonth currentMonth = java.time.YearMonth.now();
+            for (int i = 0; i < 12; i++) {
+                java.time.YearMonth targetMonth = currentMonth.minusMonths(i);
+                String key = targetMonth.getYear() + "-" + String.format("%02d", targetMonth.getMonthValue());
+                double entregue = horasPorMes.getOrDefault(key, 0.0);
+                
+                valuesResumo.add(Arrays.asList(
+                    key,
+                    activeUsers * 160, // Média de 160h mensais por colaborador
+                    entregue
+                ));
+            }
+
             // Atualiza BASE_TAREFAS
             updateSheet(service, "BASE_TAREFAS!A1:Z2000", valuesTarefas);
             
             // Atualiza BASE_TURNOVER
             updateSheet(service, "BASE_TURNOVER!A1:I1000", valuesTurnover);
+            
+            // Atualiza RESUMO_METRICAS
+            updateSheet(service, "RESUMO_METRICAS!A1:C50", valuesResumo);
 
-            System.out.println("Sincronização multicanal concluída.");
+            System.out.println("Sincronização multicanal (3 abas) concluída.");
 
         } catch (Exception e) {
             System.err.println("Erro ao sincronizar com Google Sheets: " + e.getMessage());
