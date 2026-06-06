@@ -3,11 +3,16 @@
 
 <div class="row justify-content-center">
     <div class="col-12 col-lg-10">
-        <div class="d-flex align-items-center mb-4">
-            <a href="/usuarios" class="btn btn-light btn-sm rounded-circle me-3">
-                <i class="bi bi-arrow-left"></i>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center">
+                <a href="/usuarios" class="btn btn-light btn-sm rounded-circle me-3">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="h4 mb-0 fw-bold">Perfil do Usuário</h1>
+            </div>
+            <a href="/usuarios/<%= usuarioPerfil.id %>/relatorio" class="btn btn-potiguar fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-pdf me-2"></i> Gerar Relatório de Performance
             </a>
-            <h1 class="h4 mb-0 fw-bold">Perfil do Usuário</h1>
         </div>
 
         <div class="row g-4">

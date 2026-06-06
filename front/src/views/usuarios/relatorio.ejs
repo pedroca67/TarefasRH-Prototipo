@@ -1,0 +1,157 @@
+<%- include('../partials/header') %>
+
+<div class="container py-5" id="printableArea">
+    <!-- Cabeçalho do Relatório -->
+    <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+        <div>
+            <img src="/img/logoHorizontal.png" alt="Potiguar" style="max-height: 50px;" class="mb-3">
+            <h2 class="fw-bold text-potiguar mb-1">Relatório de Performance Individual</h2>
+            <p class="text-muted mb-0">Gerado em: <%= new Date().toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %></p>
+        </div>
+        <div class="text-end d-print-none">
+            <button onclick="window.print()" class="btn btn-potiguar fw-bold px-4">
+                <i class="bi bi-printer me-2"></i> Imprimir / Salvar PDF
+            </button>
+            <a href="/usuarios/<%= usuarioPerfil.id %>" class="btn btn-outline-secondary ms-2">Voltar</a>
+        </div>
+    </div>
+
+    <!-- Dados do Colaborador -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <img src="<%= usuarioPerfil.fotoUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + usuarioPerfil.nome.replace(' ', '') %>" 
+                             class="rounded-circle border border-4 border-white shadow-sm me-4" width="100" height="100">
+                        <div>
+                            <h3 class="fw-bold mb-1"><%= usuarioPerfil.nome %></h3>
+                            <p class="text-muted mb-2"><%= usuarioPerfil.email %> | Matrícula: <%= usuarioPerfil.codigoFuncionario || '-' %></p>
+                            <span class="badge bg-potiguar px-3 py-2 text-uppercase" style="font-size: 0.7rem;">Time: <%= usuarioPerfil.time ? usuarioPerfil.time.nome : 'Nenhum' %></span>
+                            <span class="badge bg-secondary px-3 py-2 text-uppercase ms-2" style="font-size: 0.7rem;">Unidade: <%= usuarioPerfil.loja || '-' %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 bg-potiguar text-white text-center">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h6 class="text-uppercase small opacity-75 fw-bold mb-1">Impacto Total Acumulado</h6>
+                    <div class="display-4 fw-bold"><%= impactoTotal %></div>
+                    <small>Pontos de Impacto</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicadores Chave -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card border shadow-sm text-center p-3 h-100">
+                <h6 class="text-muted small fw-bold text-uppercase mb-3">Aderência ao Cargo</h6>
+                <div class="h2 fw-bold text-success mb-2"><%= aderenciaPercent %>%</div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: <%= aderenciaPercent %>%"></div>
+                </div>
+                <small class="text-muted mt-2">Percepção do colaborador sobre suas funções oficiais.</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border shadow-sm text-center p-3 h-100">
+                <h6 class="text-muted small fw-bold text-uppercase mb-3">Volume de Entregas</h6>
+                <div class="h2 fw-bold text-primary mb-2"><%= tarefas.filter(t => t.status === 'CONCLUIDA').length %></div>
+                <p class="small text-muted mb-0">Tarefas concluídas com sucesso.</p>
+                <div class="mt-2 pt-2 border-top">
+                    <small class="text-danger fw-bold"><%= tarefas.filter(t => t.status === 'ATRASADA').length %> atrasos registrados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border shadow-sm text-center p-3 h-100">
+                <h6 class="text-muted small fw-bold text-uppercase mb-3">Complexidade Média</h6>
+                <% 
+                    const concluidas = tarefas.filter(t => t.status === 'CONCLUIDA');
+                    const avgImpact = concluidas.length > 0 ? (impactoTotal / concluidas.length).toFixed(1) : 0;
+                %>
+                <div class="h2 fw-bold text-warning mb-2"><%= avgImpact %></div>
+                <p class="small text-muted mb-0">Pontos por tarefa concluída.</p>
+                <div class="mt-2 pt-2 border-top">
+                    <small class="fw-bold text-muted"><%= tarefas.filter(t => t.complexidade === 'ALTA').length %> tarefas de alta complexidade</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listagem de Atividades Recentes -->
+    <div class="card border shadow-sm mb-5">
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0">Histórico de Atividades</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0" style="font-size: 0.85rem;">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-3">Tarefa</th>
+                        <th>Conclusão</th>
+                        <th>Complexidade</th>
+                        <th class="text-center">No Cargo?</th>
+                        <th class="text-end pe-3">Pontos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% 
+                        const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
+                        tarefas.filter(t => t.status === 'CONCLUIDA')
+                               .sort((a,b) => new Date(b.dataConclusao) - new Date(a.dataConclusao))
+                               .slice(0, 15)
+                               .forEach(t => { 
+                    %>
+                        <tr>
+                            <td class="ps-3 fw-bold"><%= t.titulo %></td>
+                            <td><%= t.dataConclusao ? new Date(t.dataConclusao).toLocaleDateString('pt-BR') : '-' %></td>
+                            <td><span class="badge bg-secondary text-uppercase" style="font-size: 0.6rem;"><%= t.complexidade %></span></td>
+                            <td class="text-center">
+                                <% if (t.previstoNoCargoColaborador) { %>
+                                    <span class="text-success fw-bold">SIM</span>
+                                <% } else { %>
+                                    <span class="text-danger fw-bold">NÃO</span>
+                                <% } %>
+                            </td>
+                            <td class="text-end pe-3 fw-bold"><%= pesoEsforco[t.complexidade] || 0 %> pts</td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Rodapé de Assinaturas (Apenas na impressão) -->
+    <div class="row mt-5 pt-5 d-none d-print-flex">
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; margin-top: 50px; padding-top: 10px;">
+                <p class="fw-bold mb-0"><%= usuarioPerfil.nome %></p>
+                <small>Colaborador(a)</small>
+            </div>
+        </div>
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; margin-top: 50px; padding-top: 10px;">
+                <p class="fw-bold mb-0">Responsável RH</p>
+                <small>Gestor(a)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body { background: white !important; }
+        .d-print-none { display: none !important; }
+        .card { border: 1px solid #eee !important; box-shadow: none !important; }
+        .bg-light { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+        .bg-potiguar { background-color: #170e4a !important; color: white !important; -webkit-print-color-adjust: exact; }
+        .badge { border: 1px solid #666 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+    }
+</style>
+
+<%- include('../partials/footer') %>

@@ -370,6 +370,32 @@ app.post('/usuarios/:id/toggle', authMiddleware, gestorMiddleware, async (req, r
     }
 });
 
+app.get('/usuarios/:id/relatorio', authMiddleware, gestorMiddleware, async (req, res) => {
+    try {
+        const usuarioPerfil = (await apiService.getUsuario(req.params.id)).data;
+        const tarefas = (await apiService.getTarefas(req.params.id)).data;
+        
+        // Calcular estatísticas avançadas para o relatório
+        const pesoEsforco = { 'BAIXA': 1, 'MEDIA': 3, 'ALTA': 5 };
+        const concluidas = tarefas.filter(t => t.status === 'CONCLUIDA');
+        
+        const impactoTotal = concluidas.reduce((acc, t) => acc + (pesoEsforco[t.complexidade] || 0), 0);
+        const aderenciaSim = concluidas.filter(t => t.previstoNoCargoColaborador === true).length;
+        const totalAderenciaResp = concluidas.filter(t => t.previstoNoCargoColaborador !== null).length;
+        const aderenciaPercent = totalAderenciaResp > 0 ? Math.round((aderenciaSim / totalAderenciaResp) * 100) : 0;
+
+        res.render('usuarios/relatorio', { 
+            usuarioPerfil, 
+            tarefas, 
+            impactoTotal, 
+            aderenciaPercent,
+            currentPage: 'usuarios' 
+        });
+    } catch (error) {
+        res.status(500).send('Erro ao gerar relatório');
+    }
+});
+
 // Tratamento de 404 (Página não encontrada) - Deve ser a última rota
 app.use((req, res) => {
     res.status(404).render('errors/404');
