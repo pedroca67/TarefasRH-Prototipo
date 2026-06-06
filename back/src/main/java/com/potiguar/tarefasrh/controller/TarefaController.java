@@ -208,7 +208,7 @@ public class TarefaController {
                 .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
                 .count();
 
-        long totalHorasEst = esforcoTotal * 2;
+        long totalHorasEst = usuarioRepository.countByAtivoTrue() * 40;
         long concluidasHorasEst = esforcoConcluido * 2;
 
         // Lógica do Ranking do Mês Atual
