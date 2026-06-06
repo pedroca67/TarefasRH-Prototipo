@@ -154,12 +154,27 @@ public class GoogleSheetsService {
         String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
 
         if (credentialsJson != null && !credentialsJson.isBlank()) {
-            credentials = GoogleCredentials.fromStream(
-                    new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8))
-            );
+            System.out.println("Usando credenciais da variável de ambiente GOOGLE_CREDENTIALS_JSON...");
+            try {
+                credentials = GoogleCredentials.fromStream(
+                        new ByteArrayInputStream(credentialsJson.trim().getBytes(StandardCharsets.UTF_8))
+                );
+            } catch (Exception e) {
+                System.err.println("ERRO: A variável GOOGLE_CREDENTIALS_JSON não contém um JSON válido.");
+                System.err.println("Início do conteúdo detectado: " + (credentialsJson.length() > 10 ? credentialsJson.substring(0, 10) : "curto demais"));
+                throw e;
+            }
         } else {
-            try (InputStream credentialsStream = Files.newInputStream(Path.of(googleCredentialsPath))) {
+            System.out.println("Usando arquivo de credenciais: " + googleCredentialsPath);
+            Path path = Path.of(googleCredentialsPath);
+            if (!Files.exists(path)) {
+                throw new java.io.FileNotFoundException("Arquivo de credenciais não encontrado em: " + googleCredentialsPath);
+            }
+            try (InputStream credentialsStream = Files.newInputStream(path)) {
                 credentials = GoogleCredentials.fromStream(credentialsStream);
+            } catch (Exception e) {
+                System.err.println("ERRO: O arquivo " + googleCredentialsPath + " não contém um JSON válido.");
+                throw e;
             }
         }
 

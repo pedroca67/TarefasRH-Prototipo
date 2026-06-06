@@ -53,6 +53,11 @@ Contém o fluxo operacional detalhado. Use esta aba para todos os gráficos de p
 Contém o cadastro histórico da equipe. Use esta aba para análise de rotatividade.
 - **Colunas:** ID_Usuario, Nome, E-mail, Loja, Time, Nível, Status (ATIVO/INATIVO), Data_Admissao, Data_Desligamento.
 
+### 3. Aba `RESUMO_METRICAS` (NOVA)
+Contém indicadores consolidados para análise de eficiência global da empresa.
+- **Colunas:** Mês/Ano, Capacidade Total (Horas), Horas Entregues (Produtividade Real).
+- **Uso no Looker:** Criar o gráfico de **Eficiência Global** (Capacidade vs. Realidade).
+
 ---
 
 ## 🛠️ Guia de Configuração de Gráficos (Looker Studio)
@@ -67,9 +72,13 @@ Contém o cadastro histórico da equipe. Use esta aba para análise de rotativid
 1.  **Taxa de Turnover (Série Temporal):**
     *   **Dimensão de Período:** `Data_Admissao` (para crescimento) ou `Data_Desligamento` (para perda).
     *   **Métrica:** `COUNT(ID_Usuario)`.
-2.  **Movimentação por Loja (Barras):**
-    *   **Dimensão:** `Loja`.
-    *   **Métrica:** `COUNT(ID_Usuario)` onde `Status = "INATIVO"`.
+
+### C. Usando a aba `RESUMO_METRICAS`:
+1.  **Eficiência Global (Gráfico de Combinação):**
+    *   **Dimensão de Período:** `Mês/Ano`.
+    *   **Métrica 1:** `SUM(Capacidade Total (Horas))` - Barra.
+    *   **Métrica 2:** `SUM(Horas Entregues (Produtividade Real))` - Linha.
+    *   *Insight:* Mostrar para a diretoria o gap entre horas pagas e tarefas registradas.
 
 ---
 
