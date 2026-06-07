@@ -217,6 +217,9 @@ app.get('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
     } else if (periodo === 'mes') {
         startDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
         endDate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+    } else if (periodo === 'ano') {
+        startDate = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
+        endDate = new Date(hoje.getFullYear(), 11, 31).toISOString().split('T')[0];
     } else {
         startDate = dataDe;
         endDate = dataAte;

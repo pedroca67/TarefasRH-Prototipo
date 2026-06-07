@@ -10,7 +10,7 @@
             <label class="small fw-bold text-muted mb-0 d-none d-lg-inline">PERÍODO:</label>
             <select name="periodo" id="periodoSelect" class="form-select form-select-sm border-0 bg-light fw-bold" style="width: auto; min-width: 140px;">
                 <option value="todos" <%= filtro.periodo === 'todos' ? 'selected' : '' %>>Todo o período</option>
-                <option value="semana" <%= filtro.periodo === 'semana' ? 'selected' : '' %>>Esta semana</option>
+                <option value="semana" <%= filtro.periodo === 'semana' ? 'selected' : '' %>>Últimos 7 dias</option>
                 <option value="mes" <%= filtro.periodo === 'mes' ? 'selected' : '' %>>Este mês</option>
                 <option value="ano" <%= filtro.periodo === 'ano' ? 'selected' : '' %>>Este ano</option>
                 <option value="personalizado" <%= filtro.periodo === 'personalizado' ? 'selected' : '' %>>Personalizado...</option>
