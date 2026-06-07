@@ -286,82 +286,79 @@ public class TarefaController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        // 1. Otimização: Pegamos os números base direto do Banco (não carrega objetos na RAM)
-        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDateTime.now().minusYears(10);
-        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
-
-        long total = tarefaRepository.countByDataCriacaoBetween(start, end);
-        long pendente = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.PENDENTE, start, end);
-        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, start, end);
-        long concluida = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, start, end);
+        // Carregamos a base uma única vez para garantir consistência total nos cálculos
+        List<Tarefa> todas = tarefaRepository.findAll();
         
-        // Para as estatísticas mais complexas (Ranking, Aderência), pegamos apenas o subconjunto necessário
-        List<Tarefa> tarefasPerformance;
-        if (analyticalMode && concluida > 0) {
-            // Se concluída for muito alta, o ideal seria uma query de agregação no banco,
-            // mas para 5000 registros, carregar apenas as concluídas já resolve o OOM.
-            tarefasPerformance = tarefaRepository.findAll().stream()
-                .filter(t -> t.getStatus() == Status.CONCLUIDA)
-                .filter(t -> {
-                    if (t.getDataConclusao() == null) return false;
-                    LocalDate d = t.getDataConclusao().toLocalDate();
-                    return (startDate == null || !d.isBefore(startDate)) && (endDate == null || !d.isAfter(endDate));
-                }).collect(Collectors.toList());
-        } else {
-            tarefasPerformance = Collections.emptyList();
-        }
+        // 1. Filtragem Operacional (Cards do Topo: Pendente, Andamento, Atrasada)
+        // Baseada em Data de Criação ou Prazo
+        List<Tarefa> baseOperacional = todas.stream().filter(t -> {
+            if (startDate == null && endDate == null) return true;
+            LocalDate criacao = t.getDataCriacao().toLocalDate();
+            LocalDate prazo = t.getDataPrazo();
+            boolean matches = true;
+            if (startDate != null) matches = matches && (criacao.isAfter(startDate.minusDays(1)) || prazo.isAfter(startDate.minusDays(1)));
+            if (endDate != null) matches = matches && (criacao.isBefore(endDate.plusDays(1)) || prazo.isBefore(endDate.plusDays(1)));
+            return matches;
+        }).collect(Collectors.toList());
 
-        long esforcoConcluido = tarefasPerformance.stream()
+        // 2. Filtragem Analítica (Métricas de %, Produtividade e Ranking)
+        // Baseada estritamente na Data de Conclusão (para quem terminou)
+        List<Tarefa> baseAnalitica = todas.stream().filter(t -> {
+            if (t.getStatus() != Status.CONCLUIDA || t.getDataConclusao() == null) return false;
+            LocalDate conclusao = t.getDataConclusao().toLocalDate();
+            if (startDate == null && endDate == null) return true;
+            boolean matches = true;
+            if (startDate != null) matches = matches && conclusao.isAfter(startDate.minusDays(1));
+            if (endDate != null) matches = matches && conclusao.isBefore(endDate.plusDays(1));
+            return matches;
+        }).collect(Collectors.toList());
+
+        // --- Cálculos Operacionais ---
+        long total = baseOperacional.size();
+        long pendente = baseOperacional.stream().filter(t -> t.getStatus() == Status.PENDENTE).count();
+        long emAndamento = baseOperacional.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count();
+        long concluida = baseOperacional.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count();
+        long atrasada = baseOperacional.stream().filter(t -> t.getStatus() == Status.ATRASADA || (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now()))).count();
+
+        // --- Cálculos Analíticos (Garantindo que o denominador venha da mesma base) ---
+        long esforcoConcluido = baseAnalitica.stream()
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
+        
+        // IMPORTANTE: Para a porcentagem de produtividade, o esforço TOTAL deve ser o da base analítica
+        // ou usamos um denominador fixo. Vamos usar a soma das concluídas na base analítica.
+        long aderenciaGestorSim = baseAnalitica.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
+        long aderenciaColabSim = baseAnalitica.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
-        long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
-        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
-
+        // Cálculo de Horas (Capacidade) - Mantemos a lógica histórica que já estava boa
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         long totalHorasEst = 0;
-        
-        LocalDate filterStart = startDate;
-        LocalDate filterEnd = endDate;
-
-        // Se não houver filtro, usamos os últimos 30 dias como base de comparação útil
-        if (filterStart == null || filterEnd == null) {
-            filterEnd = LocalDate.now();
-            filterStart = filterEnd.minusDays(30);
-        }
+        LocalDate filterStart = startDate != null ? startDate : LocalDate.now().minusDays(30);
+        LocalDate filterEnd = endDate != null ? endDate : LocalDate.now();
 
         for (Usuario u : todosUsuarios) {
             LocalDate admission = u.getDataCriacao().toLocalDate();
             LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
-
-            // Início da atividade no período: o que for posterior entre admissão e início do filtro
             LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
-            
-            // Fim da atividade no período: o que for anterior entre desativação e fim do filtro
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
-
             if (!activeStart.isAfter(activeEnd)) {
                 long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
-                // Proporção: 40h por semana (7 dias)
                 totalHorasEst += (activeDays * 40 / 7);
             }
         }
         
-        long concluidasHorasEst = esforcoConcluido * 2;
+        long concluidasHorasEst = esforcoConcluido * 5; // 1pt = 5h conforme definido
 
+        // Ranking
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
-        tarefasPerformance.stream()
-            .filter(t -> t.getStatus() == Status.CONCLUIDA)
-            .forEach(t -> {
-                Usuario executor = t.getConcluidoPor();
-                if (executor == null && !t.getResponsaveis().isEmpty()) {
-                    executor = t.getResponsaveis().get(0);
-                }
-                if (executor != null) {
-                    long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                    pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
-                }
-            });
+        baseAnalitica.forEach(t -> {
+            Usuario executor = t.getConcluidoPor();
+            if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().get(0);
+            if (executor != null) {
+                long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
+            }
+        });
 
         List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
@@ -372,29 +369,19 @@ public class TarefaController {
                     item.put("fotoUrl", e.getKey().getFotoUrl());
                     item.put("pontos", e.getValue());
                     return item;
-                })
-                .collect(Collectors.toList());
+                }).collect(Collectors.toList());
 
+        // Turnover (estático para os últimos 6 meses)
         List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
-        LocalDate hoje = LocalDate.now();
         for (int i = 5; i >= 0; i--) {
-            LocalDate mesReferencia = hoje.minusMonths(i);
-            int mes = mesReferencia.getMonthValue();
-            int ano = mesReferencia.getYear();
-
-            long admissoes = usuarioRepository.findAll().stream()
-                    .filter(u -> u.getDataCriacao() != null && u.getDataCriacao().getMonthValue() == mes && u.getDataCriacao().getYear() == ano)
-                    .count();
-
-            long desligamentos = usuarioRepository.findAll().stream()
-                    .filter(u -> u.getDataDesativacao() != null && u.getDataDesativacao().getMonthValue() == mes && u.getDataDesativacao().getYear() == ano)
-                    .count();
-
-            Map<String, Object> turnoverMes = new HashMap<>();
-            turnoverMes.put("mes", mesReferencia.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("pt", "BR")));
-            turnoverMes.put("admissoes", admissoes);
-            turnoverMes.put("desligamentos", desligamentos);
-            turnoverData.add(turnoverMes);
+            LocalDate mesRef = LocalDate.now().minusMonths(i);
+            long adm = todosUsuarios.stream().filter(u -> u.getDataCriacao().getMonthValue() == mesRef.getMonthValue() && u.getDataCriacao().getYear() == mesRef.getYear()).count();
+            long des = todosUsuarios.stream().filter(u -> u.getDataDesativacao() != null && u.getDataDesativacao().getMonthValue() == mesRef.getMonthValue() && u.getDataDesativacao().getYear() == mesRef.getYear()).count();
+            Map<String, Object> m = new HashMap<>();
+            m.put("mes", mesRef.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("pt", "BR")));
+            m.put("admissoes", adm);
+            m.put("desligamentos", des);
+            turnoverData.add(m);
         }
 
         Map<String, Object> stats = new HashMap<>();
@@ -402,12 +389,12 @@ public class TarefaController {
         stats.put("pendente", pendente);
         stats.put("em_andamento", emAndamento);
         stats.put("concluida", concluida);
-        stats.put("atrasada", 0L); // A contagem de atrasadas agora é tratada via query ou dinâmica
+        stats.put("atrasada", atrasada);
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", total * 3); // Média ponderada para esforço total sem carregar tudo
+        stats.put("esforco_total", total * 3); // Valor referencial
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
-        stats.put("aderencia_gestor_nao", concluida - aderenciaGestorSim);
+        stats.put("aderencia_gestor_nao", baseAnalitica.size() - aderenciaGestorSim);
         stats.put("aderencia_colab_sim", aderenciaColabSim);
         stats.put("total_horas_est", totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
