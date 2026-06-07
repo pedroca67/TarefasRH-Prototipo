@@ -137,6 +137,29 @@ public class GoogleSheetsService {
                 ));
             }
 
+            // --- ABA 4: LOOKER_DASHBOARD (LIMPA E RÁPIDA) ---
+            List<List<Object>> valuesLooker = new ArrayList<>();
+            valuesLooker.add(Arrays.asList("Título", "Executor de Fato", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Prazo", "Conclusão"));
+            
+            for (Tarefa t : tarefas) {
+                int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                valuesLooker.add(Arrays.asList(
+                    t.getTitulo(),
+                    t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
+                    t.getTime() != null ? t.getTime().getNome() : "-",
+                    t.getConcluidoPor() != null ? t.getConcluidoPor().getLoja() : (t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-"),
+                    t.getCategoria().toString(),
+                    t.getStatus().toString(),
+                    t.getComplexidade().toString(),
+                    esforco,
+                    esforco * 2,
+                    t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                    t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
+                    t.getDataPrazo().toString(),
+                    t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-"
+                ));
+            }
+
             // Atualiza BASE_TAREFAS
             System.out.println("Tentando atualizar BASE_TAREFAS...");
             updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas);
@@ -149,7 +172,11 @@ public class GoogleSheetsService {
             System.out.println("Tentando atualizar RESUMO_METRICAS...");
             updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo);
 
-            System.out.println("✅ Sincronização Google Sheets concluída com sucesso (3 abas).");
+            // Atualiza LOOKER_DASHBOARD
+            System.out.println("Tentando atualizar LOOKER_DASHBOARD...");
+            updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker);
+
+            System.out.println("✅ Sincronização Google Sheets concluída com sucesso (4 abas).");
 
         } catch (Exception e) {
             System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());

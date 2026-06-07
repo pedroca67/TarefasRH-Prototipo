@@ -7,14 +7,15 @@ Este guia é o seu "passo a passo" técnico para transformar as abas da Planilha
 ## 🛠️ Passo 0: Conexão de Dados
 1. No Looker Studio, clique em **Criar > Relatório**.
 2. Selecione **Planilhas Google**.
-3. Adicione **3 fontes de dados** (uma para cada aba):
-    *   Fonte A: `BASE_TAREFAS`
-    *   Fonte B: `BASE_TURNOVER`
-    *   Fonte C: `RESUMO_METRICAS`
+3. Adicione **4 fontes de dados** (uma para cada aba):
+    *   Fonte A: `LOOKER_DASHBOARD` (Principal para tarefas)
+    *   Fonte B: `BASE_TURNOVER` (Para pessoas)
+    *   Fonte C: `RESUMO_METRICAS` (Para eficiência macro)
+    *   Fonte D: `BASE_TAREFAS` (Opcional, apenas se precisar ler descrições longas)
 
 ---
 
-## 📊 Página 1: Performance e Produtividade (Aba `BASE_TAREFAS`)
+## 📊 Página 1: Performance e Produtividade (Aba `LOOKER_DASHBOARD`)
 *Esta tela foca em mostrar QUANTO o RH está produzindo.*
 
 ### 1. Indicadores de Topo (Scorecards)
@@ -34,18 +35,18 @@ Este guia é o seu "passo a passo" técnico para transformar as abas da Planilha
 
 ---
 
-## ⚠️ Página 2: A Chaga do Problema - Aderência ao Cargo (Aba `BASE_TAREFAS`)
+## ⚠️ Página 2: A Chaga do Problema - Aderência ao Cargo (Aba `LOOKER_DASHBOARD`)
 *Esta é a tela mais importante. Ela prova que a descrição de cargo está falha.*
 
 ### 1. O "Gap" de Funções (Gráfico de Pizza)
 *   **Dimensão:** `Previsto Cargo (Colab)`.
-*   **Métrica:** `COUNT(ID)`.
+*   **Métrica:** `COUNT(Título)`.
 *   **Legenda:** SIM (No Cargo) / NÃO (Extra-Cargo).
 *   **Cores:** Verde para SIM, Vermelho para NÃO.
 *   **Insight:** Se o "NÃO" for grande, você prova o desvio de função.
 
 ### 2. Aderência por Unidade/Loja (Gráfico de Barras Empilhadas)
-*   **Dimensão:** `Unidade do Criador`.
+*   **Dimensão:** `Loja`.
 *   **Métrica:** `Record Count`.
 *   **Quebra de Dimensão:** `Previsto Cargo (Colab)`.
 *   **Insight:** Descubra qual loja gera mais demandas "aleatórias" para o RH.

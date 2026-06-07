@@ -58,15 +58,20 @@ Contém indicadores consolidados para análise de eficiência global da empresa.
 - **Colunas:** Mês/Ano, Capacidade Total (Horas), Horas Entregues (Produtividade Real).
 - **Uso no Looker:** Criar o gráfico de **Eficiência Global** (Capacidade vs. Realidade).
 
+### 4. Aba `LOOKER_DASHBOARD` (RECOMENDADA)
+Uma versão "limpa" e de alta performance da base de tarefas, ideal para todos os gráficos do Looker.
+- **Diferencial:** Remove campos de texto pesado (Descrição, Evidências) para garantir carregamento instantâneo.
+- **Colunas:** Título, Executor de Fato, Time, Loja, Categoria, Status, Complexidade, Esforço (Pts), Horas Est., Previsto Cargo (Gestor), Previsto Cargo (Colab), Prazo, Conclusão.
+
 ---
 
 ## 🛠️ Guia de Configuração de Gráficos (Looker Studio)
 
-### A. Usando a aba `BASE_TAREFAS`:
+### A. Usando a aba `LOOKER_DASHBOARD`:
 1.  **Visão Geral (Scorecards):** `SUM(Esforço (Pts))`, `SUM(Horas Est.)`.
 2.  **Mismatch de Cargos (Pizza):** Dimensão `Previsto Cargo (Colab)`.
 3.  **Produtividade (Barras):** Dimensão `Categoria` | Métrica `SUM(Esforço (Pts))`.
-4.  **Mapa de Demandas:** Dimensão `Unidade do Criador`.
+4.  **Mapa de Demandas:** Dimensão `Loja`.
 
 ### B. Usando a aba `BASE_TURNOVER`:
 1.  **Taxa de Turnover (Série Temporal):**
@@ -76,8 +81,8 @@ Contém indicadores consolidados para análise de eficiência global da empresa.
 ### C. Usando a aba `RESUMO_METRICAS`:
 1.  **Eficiência Global (Gráfico de Combinação):**
     *   **Dimensão de Período:** `Mês/Ano`.
-    *   **Métrica 1:** `SUM(Capacidade Total (Horas))` - Barra.
-    *   **Métrica 2:** `SUM(Horas Entregues (Produtividade Real))` - Linha.
+    *   **Métrica 1 (Barra):** `SUM(Capacidade Total (Horas))`.
+    *   **Métrica 2 (Linha):** `SUM(Horas Entregues (Produtividade Real))`.
     *   *Insight:* Mostrar para a diretoria o gap entre horas pagas e tarefas registradas.
 
 ---
