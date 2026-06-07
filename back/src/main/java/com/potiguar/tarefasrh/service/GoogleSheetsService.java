@@ -44,6 +44,7 @@ public class GoogleSheetsService {
             "ALTA", 5
     );
 
+    @org.springframework.scheduling.annotation.Async
     public void syncAllTasks() {
         if (spreadsheetId.isEmpty()) {
             return;
@@ -53,7 +54,8 @@ public class GoogleSheetsService {
             Sheets service = getSheetsService();
             
             // --- ABA 1: BASE_TAREFAS ---
-            List<Tarefa> tarefas = tarefaRepository.findAll();
+            // Note: In a massive scale, we should use a cursor or stream here.
+            List<Tarefa> tarefas = tarefaRepository.findAll(); 
             List<List<Object>> valuesTarefas = new ArrayList<>();
             valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             
@@ -61,9 +63,11 @@ public class GoogleSheetsService {
                 String responsaveisLabel;
                 if (t.getTime() != null) {
                     responsaveisLabel = "Time: " + t.getTime().getNome();
-                } else {
+                } else if (t.getResponsaveis() != null) {
                     String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
                     responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
+                } else {
+                    responsaveisLabel = "-";
                 }
                 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
@@ -108,7 +112,7 @@ public class GoogleSheetsService {
                 .filter(t -> t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getDataConclusao() != null)
                 .collect(Collectors.groupingBy(
                     t -> t.getDataConclusao().getYear() + "-" + String.format("%02d", t.getDataConclusao().getMonthValue()),
-                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 5.0) // 1pt = 5h
+                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 3.0) // 1pt = 3h
                 ));
 
             // Adicionar os últimos 12 meses ao resumo

@@ -8,8 +8,24 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
-    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tarefa t WHERE " +
+    @org.springframework.data.jpa.repository.Query(value = "SELECT DISTINCT t FROM Tarefa t " +
+            "LEFT JOIN FETCH t.responsaveis " +
+            "LEFT JOIN FETCH t.time " +
+            "LEFT JOIN FETCH t.criadoPor " +
+            "WHERE " +
             "(:responsavelId IS NULL OR EXISTS (SELECT r FROM t.responsaveis r WHERE r.id = :responsavelId)) AND " +
+            "(:timeId IS NULL OR t.time.id = :timeId) AND " +
+            "(:status IS NULL OR t.status = :status) AND " +
+            "(:complexidade IS NULL OR t.complexidade = :complexidade) AND " +
+            "(:categoria IS NULL OR t.categoria = :categoria) AND " +
+            "(:search IS NULL OR LOWER(t.titulo) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:startDate IS NULL OR :endDate IS NULL OR " +
+            " (t.dataCriacao >= :startDate AND t.dataCriacao <= :endDate) OR " +
+            " (t.dataPrazo >= :startDate AND t.dataPrazo <= :endDate))",
+            countQuery = "SELECT COUNT(DISTINCT t) FROM Tarefa t " +
+            "LEFT JOIN t.responsaveis r " +
+            "WHERE " +
+            "(:responsavelId IS NULL OR r.id = :responsavelId) AND " +
             "(:timeId IS NULL OR t.time.id = :timeId) AND " +
             "(:status IS NULL OR t.status = :status) AND " +
             "(:complexidade IS NULL OR t.complexidade = :complexidade) AND " +

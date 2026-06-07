@@ -1,0 +1,37 @@
+<%- include('../partials/header') %>
+
+<section class="min-vh-100 d-flex align-items-center bg-light">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 text-center">
+        <div class="card shadow-sm border-0 p-5">
+            <div class="mb-4">
+                <i class="bi bi-exclamation-octagon text-danger" style="font-size: 5rem;"></i>
+            </div>
+            <h1 class="fw-bold text-potiguar mb-3">Ops! Algo deu errado</h1>
+            <p class="text-muted mb-2">Status: <strong><%= status %></strong></p>
+            <p class="text-muted mb-5"><%= message %></p>
+            
+            <% if (error && error.stack) { %>
+                <div class="text-start mb-4">
+                    <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#debugInfo">
+                        Ver detalhes técnicos
+                    </button>
+                    <div class="collapse mt-2" id="debugInfo">
+                        <pre class="bg-dark text-white p-3 rounded small" style="max-height: 200px; overflow: auto;"><%= error.stack %></pre>
+                    </div>
+                </div>
+            <% } %>
+
+            <div>
+                <a href="/dashboard" class="btn btn-potiguar px-5 py-2 fw-bold">
+                    <i class="bi bi-house-door me-2"></i> Ir para o Dashboard
+                </a>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

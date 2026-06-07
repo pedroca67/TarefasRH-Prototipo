@@ -22,7 +22,7 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(unique = true, length = 50)
+    @Column(name = "codigo_funcionario", unique = true, length = 50)
     private String codigoFuncionario;
 
     @Column(nullable = false)

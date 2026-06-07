@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import java.util.TimeZone;
 
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableAsync
 public class TarefasrhApplication {
     @PostConstruct
     public void init() {

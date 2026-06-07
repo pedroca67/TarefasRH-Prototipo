@@ -1,0 +1,37 @@
+package com.potiguar.tarefasrh.dto;
+
+import com.potiguar.tarefasrh.model.Nivel;
+import com.potiguar.tarefasrh.model.Time;
+import com.potiguar.tarefasrh.model.Usuario;
+import lombok.Data;
+import java.time.LocalDateTime;
+
+@Data
+public class UsuarioDTO {
+    private Long id;
+    private String nome;
+    private String email;
+    private String codigoFuncionario;
+    private Nivel nivel;
+    private Time time;
+    private String loja;
+    private String fotoUrl;
+    private boolean ativo;
+    private LocalDateTime dataCriacao;
+
+    public static UsuarioDTO fromEntity(Usuario u) {
+        if (u == null) return null;
+        UsuarioDTO dto = new UsuarioDTO();
+        dto.setId(u.getId());
+        dto.setNome(u.getNome());
+        dto.setEmail(u.getEmail());
+        dto.setCodigoFuncionario(u.getCodigoFuncionario());
+        dto.setNivel(u.getNivel());
+        dto.setTime(u.getTime());
+        dto.setLoja(u.getLoja());
+        dto.setFotoUrl(u.getFotoUrl());
+        dto.setAtivo(u.isAtivo());
+        dto.setDataCriacao(u.getDataCriacao());
+        return dto;
+    }
+}

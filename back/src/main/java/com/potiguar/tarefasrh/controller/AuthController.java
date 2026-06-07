@@ -1,6 +1,7 @@
 package com.potiguar.tarefasrh.controller;
 
 import com.potiguar.tarefasrh.dto.LoginRequest;
+import com.potiguar.tarefasrh.dto.UsuarioDTO;
 import com.potiguar.tarefasrh.model.Usuario;
 import com.potiguar.tarefasrh.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,6 @@ public class AuthController {
             return ResponseEntity.status(403).body("Esta conta foi desativada pelo RH. Entre em contato com seu gestor.");
         }
 
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(UsuarioDTO.fromEntity(usuario));
     }
 }
