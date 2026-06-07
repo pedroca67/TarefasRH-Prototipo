@@ -1,18 +1,18 @@
 -- ======================================================
--- SCRIPT DE HARD RESET E GERAÇÃO MASSIVA (VERSÃO 3.0 - TIMES E MULTI-USUÁRIO)
+-- SCRIPT DE HARD RESET E GERAÇÃO MASSIVA (VERSÃO 4.0 - IDs RESETADOS)
 -- ======================================================
 
 SET SQL_SAFE_UPDATES = 0;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- LIMPEZA TOTAL
-DELETE FROM feedback;
-DELETE FROM notificacao;
-DELETE FROM tarefa_responsavel;
-DELETE FROM tarefa;
-DELETE FROM usuario;
-DELETE FROM time;
+-- RESET TOTAL (TRUNCATE reseta o contador de ID para 1)
+TRUNCATE TABLE feedback;
+TRUNCATE TABLE notificacao;
+TRUNCATE TABLE tarefa_responsavel;
+TRUNCATE TABLE tarefa;
+TRUNCATE TABLE usuario;
+TRUNCATE TABLE time;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -21,7 +21,7 @@ INSERT INTO time (id, nome) VALUES
 (1, 'Recrutamento e Seleção'), (2, 'Departamento Pessoal'), 
 (3, 'Treinamento e Desenvolvimento'), (4, 'Benefícios');
 
--- GESTOR PRINCIPAL
+-- GESTOR PRINCIPAL (ID será 1)
 INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao, codigo_funcionario) VALUES 
 (1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$a4PrVfZ13kaB8atN//DOPOFhhPOu9oEWqtgBU8/ezKiKtITj95lfi', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
 
@@ -74,7 +74,7 @@ BEGIN
     DECLARE r_data_criacao DATETIME;
     DECLARE r_data_prazo DATE;
     DECLARE r_data_conclusao DATETIME;
-    DECLARE r_assignment_type INT; -- 1: Individual, 2: Multi-usuário, 3: Time
+    DECLARE r_assignment_type INT; 
     DECLARE r_time_id INT;
     DECLARE r_colab_id INT;
     DECLARE r_colab2_id INT;
@@ -87,7 +87,6 @@ BEGIN
         SET r_data_criacao = DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 550) DAY);
         SET r_data_prazo = DATE_ADD(r_data_criacao, INTERVAL FLOOR(5 + RAND() * 20) DAY);
         
-        -- Lógica de Status
         IF r_status = 'CONCLUIDA' THEN
             SET r_data_conclusao = DATE_SUB(r_data_prazo, INTERVAL FLOOR(RAND() * 5) DAY);
             IF r_data_conclusao > NOW() THEN SET r_data_conclusao = NOW(); END IF;
@@ -96,7 +95,6 @@ BEGIN
             IF r_data_prazo < CURDATE() THEN SET r_status = 'ATRASADA'; END IF;
         END IF;
 
-        -- Decidir tipo de atribuição
         SET r_assignment_type = ELT(FLOOR(1 + (RAND() * 3)), 1, 2, 3);
         SET r_time_id = NULL;
         IF r_assignment_type = 3 THEN
@@ -109,11 +107,10 @@ BEGIN
             END IF;
         END IF;
 
-        -- Inserir Tarefa
         INSERT INTO tarefa (titulo, descricao, categoria, complexidade, status, data_prazo, data_conclusao, criado_por, concluido_por, evidencia, previsto_no_cargo_gestor, previsto_no_cargo_colaborador, data_criacao, time_id)
         VALUES (
             CONCAT('Demanda ', r_cat, ' #', i+1),
-            'Gerado automaticamente para análise de BI com atribuição variada.',
+            'Gerado automaticamente para análise de BI com volume massivo.',
             r_cat, r_complex, r_status, r_data_prazo, r_data_conclusao,
             1, IF(r_status = 'CONCLUIDA', r_colab_id, NULL),
             IF(r_status = 'CONCLUIDA', 'Entregável validado conforme requisitos.', NULL),
@@ -123,23 +120,19 @@ BEGIN
         
         SET t_id = LAST_INSERT_ID();
 
-        -- Relacionar responsáveis
         IF r_assignment_type = 3 THEN
-            -- Atribuição por time: vinculamos todos os membros do time na tabela de junção
             INSERT INTO tarefa_responsavel (tarefa_id, usuario_id)
             SELECT t_id, id FROM usuario WHERE time_id = r_time_id AND nivel = 'COLABORADOR';
         ELSE
-            -- Atribuição individual ou múltipla
             INSERT INTO tarefa_responsavel (tarefa_id, usuario_id) VALUES (t_id, r_colab_id);
             IF r_assignment_type = 2 AND r_colab2_id IS NOT NULL THEN
                 INSERT INTO tarefa_responsavel (tarefa_id, usuario_id) VALUES (t_id, r_colab2_id);
             END IF;
         END IF;
         
-        -- Feedbacks
-        IF r_status = 'CONCLUIDA' AND RAND() > 0.7 THEN
+        IF r_status = 'CONCLUIDA' AND RAND() > 0.8 THEN
             INSERT INTO feedback (tarefa_id, gestor_id, mensagem, data_criacao)
-            VALUES (t_id, 1, 'Trabalho em equipe excelente. Continuem assim.', DATE_ADD(r_data_conclusao, INTERVAL 2 HOUR));
+            VALUES (t_id, 1, 'Feedback de performance: entrega concluída com sucesso.', DATE_ADD(r_data_conclusao, INTERVAL 2 HOUR));
         END IF;
 
         SET i = i + 1;
@@ -147,9 +140,12 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 4. EXECUÇÃO
+-- 4. EXECUÇÃO DA CARGA (IDs voltarão ao 1 devido ao TRUNCATE)
 CALL GerarColaboradoresMassivo(30);
-CALL GerarTarefasMassivo(2000);
+CALL GerarTarefasMassivo(5000);
+
+DROP PROCEDURE IF EXISTS GerarColaboradoresMassivo;
+DROP PROCEDURE IF EXISTS GerarTarefasMassivo;
 
 SET SQL_SAFE_UPDATES = 1;
 COMMIT;

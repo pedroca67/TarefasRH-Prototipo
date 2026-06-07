@@ -71,6 +71,15 @@ public class TarefaController {
         }).collect(Collectors.toList());
     }
 
+    private Map<String, Object> emptyPaginatedResponse(int page) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", Collections.emptyList());
+        response.put("currentPage", page);
+        response.put("totalItems", 0L);
+        response.put("totalPages", 0);
+        return response;
+    }
+
     @GetMapping
     public Map<String, Object> listar(
             @RequestParam(required = false) Long responsavelId,
@@ -85,14 +94,20 @@ public class TarefaController {
             @RequestParam(defaultValue = "10") int size) {
         
         List<Tarefa> tarefas;
-        if (responsavelId != null) {
-            Usuario resp = usuarioRepository.findById(responsavelId).orElseThrow();
-            tarefas = tarefaRepository.findByResponsaveisContaining(resp);
-        } else if (timeId != null) {
-            Time time = timeRepository.findById(timeId).orElseThrow();
-            tarefas = tarefaRepository.findByTime(time);
-        } else {
-            tarefas = tarefaRepository.findAll();
+        try {
+            if (responsavelId != null) {
+                Usuario resp = usuarioRepository.findById(responsavelId).orElse(null);
+                if (resp == null) return emptyPaginatedResponse(page);
+                tarefas = tarefaRepository.findByResponsaveisContaining(resp);
+            } else if (timeId != null) {
+                Time time = timeRepository.findById(timeId).orElse(null);
+                if (time == null) return emptyPaginatedResponse(page);
+                tarefas = tarefaRepository.findByTime(time);
+            } else {
+                tarefas = tarefaRepository.findAll();
+            }
+        } catch (Exception e) {
+            return emptyPaginatedResponse(page);
         }
 
         // 1. Filtragem por busca textual, status, complexidade e categoria (Server-Side)
