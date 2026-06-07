@@ -4,6 +4,8 @@ import com.potiguar.tarefasrh.model.Status;
 import com.potiguar.tarefasrh.model.Tarefa;
 import com.potiguar.tarefasrh.model.Usuario;
 import com.potiguar.tarefasrh.model.Time;
+import com.potiguar.tarefasrh.model.Complexidade;
+import com.potiguar.tarefasrh.model.Categoria;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
