@@ -58,13 +58,15 @@ public class GoogleSheetsService {
             valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             
             for (Tarefa t : tarefas) {
-                String responsaveis = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
+                String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
+                String responsaveisLabel = !respNomes.isEmpty() ? respNomes : (t.getTime() != null ? "Time: " + t.getTime().getNome() : "-");
+                
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 String feedbacks = t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | "));
 
                 valuesTarefas.add(Arrays.asList(
                     t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
-                    responsaveis.isEmpty() ? "-" : responsaveis, t.getTime() != null ? t.getTime().getNome() : "-",
+                    responsaveisLabel, t.getTime() != null ? t.getTime().getNome() : "-",
                     t.getCategoria().toString(), t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
@@ -139,13 +141,16 @@ public class GoogleSheetsService {
 
             // --- ABA 4: LOOKER_DASHBOARD (LIMPA E RÁPIDA) ---
             List<List<Object>> valuesLooker = new ArrayList<>();
-            valuesLooker.add(Arrays.asList("Título", "Executor de Fato", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Prazo", "Conclusão"));
+            valuesLooker.add(Arrays.asList("Título", "Responsável(is)", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Prazo", "Conclusão"));
             
             for (Tarefa t : tarefas) {
+                String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
+                String responsaveisLabel = !respNomes.isEmpty() ? respNomes : (t.getTime() != null ? "Time: " + t.getTime().getNome() : "-");
+
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 valuesLooker.add(Arrays.asList(
                     t.getTitulo(),
-                    t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
+                    responsaveisLabel,
                     t.getTime() != null ? t.getTime().getNome() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getLoja() : (t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-"),
                     t.getCategoria().toString(),
@@ -160,23 +165,36 @@ public class GoogleSheetsService {
                 ));
             }
 
-            // Atualiza BASE_TAREFAS
-            System.out.println("Tentando atualizar BASE_TAREFAS...");
-            updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas);
-            
-            // Atualiza BASE_TURNOVER
-            System.out.println("Tentando atualizar BASE_TURNOVER...");
-            updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover);
-            
-            // Atualiza RESUMO_METRICAS
-            System.out.println("Tentando atualizar RESUMO_METRICAS...");
-            updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo);
+            // Sincronização Individual por Aba (para evitar que uma aba trancada pare o sistema todo)
+            try {
+                System.out.println("Sincronizando BASE_TAREFAS...");
+                updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas);
+            } catch (Exception e) {
+                System.err.println("⚠️ Aviso: Não foi possível atualizar BASE_TAREFAS. Verifique se a aba está protegida. Erro: " + e.getMessage());
+            }
 
-            // Atualiza LOOKER_DASHBOARD
-            System.out.println("Tentando atualizar LOOKER_DASHBOARD...");
-            updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker);
+            try {
+                System.out.println("Sincronizando BASE_TURNOVER...");
+                updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover);
+            } catch (Exception e) {
+                System.err.println("⚠️ Aviso: Não foi possível atualizar BASE_TURNOVER. Erro: " + e.getMessage());
+            }
 
-            System.out.println("✅ Sincronização Google Sheets concluída com sucesso (4 abas).");
+            try {
+                System.out.println("Sincronizando RESUMO_METRICAS...");
+                updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo);
+            } catch (Exception e) {
+                System.err.println("⚠️ Aviso: Não foi possível atualizar RESUMO_METRICAS. Erro: " + e.getMessage());
+            }
+
+            try {
+                System.out.println("Sincronizando LOOKER_DASHBOARD...");
+                updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker);
+            } catch (Exception e) {
+                System.err.println("⚠️ Aviso: Não foi possível atualizar LOOKER_DASHBOARD. Erro: " + e.getMessage());
+            }
+
+            System.out.println("✅ Sincronização Google Sheets finalizada.");
 
         } catch (Exception e) {
             System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());
