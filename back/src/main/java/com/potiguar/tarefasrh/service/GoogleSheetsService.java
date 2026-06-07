@@ -48,6 +48,7 @@ public class GoogleSheetsService {
     );
 
     @org.springframework.scheduling.annotation.Async
+    @jakarta.transaction.Transactional(readOnly = true)
     public void syncAllTasks() {
         if (spreadsheetId.isEmpty()) {
             return;
@@ -63,7 +64,7 @@ public class GoogleSheetsService {
             Sheets service = getSheetsService();
             
             // --- ABA 1: BASE_TAREFAS ---
-            // Busca apenas o necessário com joins otimizados
+            // Busca básica com joins muitos-para-um (não causam explosão de memória)
             List<Tarefa> tarefas = tarefaRepository.findTarefasForExport(); 
             List<List<Object>> valuesTarefas = new ArrayList<>();
             valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
@@ -72,7 +73,8 @@ public class GoogleSheetsService {
                 String responsaveisLabel;
                 if (t.getTime() != null) {
                     responsaveisLabel = "Time: " + t.getTime().getNome();
-                } else if (t.getResponsaveis() != null) {
+                } else if (t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
+                    // Lazy loading controlado por iteração (mais lento porém memória-seguro)
                     String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
                     responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
                 } else {
@@ -80,7 +82,11 @@ public class GoogleSheetsService {
                 }
                 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                String feedbacks = t.getFeedbacks() != null ? t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | ")) : "-";
+                
+                // Lazy loading de feedbacks
+                String feedbacks = (t.getFeedbacks() != null && !t.getFeedbacks().isEmpty()) 
+                    ? t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | ")) 
+                    : "-";
 
                 valuesTarefas.add(Arrays.asList(
                     t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
@@ -112,17 +118,13 @@ public class GoogleSheetsService {
                 ));
             }
 
-            // --- ABA 3: RESUMO_METRICAS (ESTRATÉGICO) ---
+            // --- ABA 3: RESUMO_METRICAS (ESTRATÉGICO OTIMIZADO) ---
             List<List<Object>> valuesResumo = new ArrayList<>();
             valuesResumo.add(Arrays.asList("Mês/Ano", "Capacidade Total (Horas)", "Horas Entregues (Produtividade Real)"));
             
-            // Agrupar horas entregues por mês
-            Map<String, Double> horasPorMes = tarefas.stream()
-                .filter(t -> t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getDataConclusao() != null)
-                .collect(Collectors.groupingBy(
-                    t -> t.getDataConclusao().getYear() + "-" + String.format("%02d", t.getDataConclusao().getMonthValue()),
-                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 3.0) // 1pt = 3h
-                ));
+            // Busca somas mensais direto do SQL para evitar carregar milhares de tarefas
+            Map<String, Double> horasPorMes = tarefaRepository.findMonthlyEffortData().stream()
+                    .collect(Collectors.toMap(row -> row[0].toString(), row -> (Double)row[1]));
 
             // Adicionar os últimos 12 meses ao resumo
             java.time.YearMonth currentMonth = java.time.YearMonth.now();
@@ -130,7 +132,6 @@ public class GoogleSheetsService {
                 java.time.YearMonth targetMonth = currentMonth.minusMonths(i);
                 String key = targetMonth.getYear() + "-" + String.format("%02d", targetMonth.getMonthValue());
                 
-                // Cálculo dinâmico de ativos
                 final java.time.YearMonth tm = targetMonth;
                 long employeesActiveInMonth = usuarios.stream().filter(u -> {
                     java.time.LocalDateTime admission = u.getDataCriacao();
@@ -152,7 +153,7 @@ public class GoogleSheetsService {
                 String responsaveisLabel;
                 if (t.getTime() != null) {
                     responsaveisLabel = "Time: " + t.getTime().getNome();
-                } else if (t.getResponsaveis() != null) {
+                } else if (t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
                     String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
                     responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
                 } else {

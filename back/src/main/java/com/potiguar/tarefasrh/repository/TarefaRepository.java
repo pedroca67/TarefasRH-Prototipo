@@ -51,6 +51,9 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countByDataCriacaoBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = :status AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
+    long countByStatusAndDataCriacaoBetween(@org.springframework.data.repository.query.Param("status") Status status, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = 'PENDENTE' AND t.dataPrazo >= CURRENT_DATE AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countPendentesNaoAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
@@ -63,11 +66,18 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND t.dataCriacao >= :start AND t.dataCriacao <= :end ORDER BY t.dataPrazo ASC")
     List<Tarefa> findTopAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
 
-    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN FETCH t.responsaveis LEFT JOIN FETCH t.time LEFT JOIN FETCH t.criadoPor LEFT JOIN FETCH t.feedbacks LEFT JOIN FETCH t.concluidoPor")
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN FETCH t.time LEFT JOIN FETCH t.criadoPor LEFT JOIN FETCH t.concluidoPor")
     List<Tarefa> findTarefasForExport();
 
-    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.time")
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.time")
     List<Usuario> findUsuariosForExport();
+
+    @org.springframework.data.jpa.repository.Query("SELECT " +
+            "CONCAT(YEAR(t.dataConclusao), '-', CASE WHEN MONTH(t.dataConclusao) < 10 THEN '0' ELSE '' END, MONTH(t.dataConclusao)) as mes, " +
+            "SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) * 3.0 " +
+            "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao IS NOT NULL " +
+            "GROUP BY YEAR(t.dataConclusao), MONTH(t.dataConclusao)")
+    List<Object[]> findMonthlyEffortData();
 
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(t.concluidoPor.nome, r.nome), SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) as pontos " +
             "FROM Tarefa t LEFT JOIN t.responsaveis r " +

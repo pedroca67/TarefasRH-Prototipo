@@ -240,9 +240,9 @@ public class TarefaController {
 
         Map<String, Object> stats = new HashMap<>();
         long pendentes = tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime);
-        long concluidas = tarefaRepository.findComFiltros(null, null, Status.CONCLUIDA, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements();
+        long concluidas = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, startDateTime, endDateTime);
         long atrasadas = tarefaRepository.countAtrasadas(startDateTime, endDateTime);
-        long emAndamento = tarefaRepository.findComFiltros(null, null, Status.EM_ANDAMENTO, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements();
+        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, startDateTime, endDateTime);
 
         stats.put("pendente", pendentes);
         stats.put("concluida", concluidas);
