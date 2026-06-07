@@ -301,14 +301,33 @@ public class TarefaController {
                 .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
                 .count();
 
-        long activeUsers = usuarioRepository.countByAtivoTrue();
-        long totalHorasEst;
-        if (startDate != null && endDate != null) {
-            long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-            // Base: 40h por semana (7 dias)
-            totalHorasEst = activeUsers * (days * 40 / 7);
-        } else {
-            totalHorasEst = activeUsers * 40; // Padrão semanal se não houver filtro
+        List<Usuario> todosUsuarios = usuarioRepository.findAll();
+        long totalHorasEst = 0;
+        
+        LocalDate filterStart = startDate;
+        LocalDate filterEnd = endDate;
+
+        // Se não houver filtro, usamos os últimos 30 dias como base de comparação útil
+        if (filterStart == null || filterEnd == null) {
+            filterEnd = LocalDate.now();
+            filterStart = filterEnd.minusDays(30);
+        }
+
+        for (Usuario u : todosUsuarios) {
+            LocalDate admission = u.getDataCriacao().toLocalDate();
+            LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
+
+            // Início da atividade no período: o que for posterior entre admissão e início do filtro
+            LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
+            
+            // Fim da atividade no período: o que for anterior entre desativação e fim do filtro
+            LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
+
+            if (!activeStart.isAfter(activeEnd)) {
+                long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
+                // Proporção: 40h por semana (7 dias)
+                totalHorasEst += (activeDays * 40 / 7);
+            }
         }
         
         long concluidasHorasEst = esforcoConcluido * 2;
