@@ -108,6 +108,9 @@ public class TarefaController {
             return emptyPaginatedResponse(page);
         }
 
+        // 0. Atualização de status IMEDIATA para garantir que filtros funcionem
+        tarefas = atualizarStatusAtrasadas(tarefas);
+
         if (search != null && !search.isBlank()) {
             String s = search.toLowerCase();
             tarefas = tarefas.stream().filter(t -> t.getTitulo().toLowerCase().contains(s)).collect(Collectors.toList());
@@ -117,7 +120,6 @@ public class TarefaController {
         if (categoria != null) tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
         
         tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
-        tarefas = atualizarStatusAtrasadas(tarefas);
         tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
 
         int totalItems = tarefas.size();
@@ -238,13 +240,10 @@ public class TarefaController {
         List<Tarefa> todasBase = tarefaRepository.findAll();
         todasBase = atualizarStatusAtrasadas(todasBase);
 
-        // LÓGICA ORIGINAL: Para os cards de status e produtividade, usamos o mesmo filtro
+        // Filtro Operacional (Cards)
         List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
+        // Filtro Analítico (Ranking e Porcentagens) - Usa data de conclusão
         List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, true);
-
-        long esforcoTotal = tarefasStatus.stream()
-                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
-                .sum();
 
         long esforcoConcluido = tarefasPerformance.stream()
                 .filter(t -> t.getStatus() == Status.CONCLUIDA)
@@ -273,13 +272,14 @@ public class TarefaController {
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
             if (!activeStart.isAfter(activeEnd)) {
                 long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
-                // USANDO DOUBLE PARA EVITAR ERRO DE DIVISÃO INTEIRA
                 totalHorasEst += (activeDays * (40.0 / 7.0));
             }
         }
         
-        long concluidasHorasEst = esforcoConcluido * 5;
+        // CUIDADO: O multiplicador deve ser o mesmo usado no front e na planilha (3h)
+        long concluidasHorasEst = esforcoConcluido * 3;
 
+        // Ranking
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
         tarefasPerformance.stream()
             .filter(t -> t.getStatus() == Status.CONCLUIDA)
@@ -322,7 +322,7 @@ public class TarefaController {
         stats.put("concluida", tarefasStatus.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count());
         stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", esforcoTotal); 
+        stats.put("esforco_total", (long)totalHorasEst / 3); // Valor referencial inverso
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
         stats.put("aderencia_gestor_nao", aderenciaGestorNao);
