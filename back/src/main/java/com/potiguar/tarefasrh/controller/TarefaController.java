@@ -286,51 +286,42 @@ public class TarefaController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        // Carregamos a base uma única vez para garantir consistência total nos cálculos
-        List<Tarefa> todas = tarefaRepository.findAll();
+        // 1. Definição do Período
+        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDateTime.now().minusYears(10);
+        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
+
+        // 2. Cálculos Operacionais DIRETO no Banco (Rápido e Seguro)
+        long total = tarefaRepository.countByDataCriacaoBetween(start, end);
+        long pendente = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.PENDENTE, start, end);
+        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, start, end);
+        long concluidaCount = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, start, end);
         
-        // 1. Filtragem Operacional (Cards do Topo: Pendente, Andamento, Atrasada)
-        // Baseada em Data de Criação ou Prazo
-        List<Tarefa> baseOperacional = todas.stream().filter(t -> {
-            if (startDate == null && endDate == null) return true;
-            LocalDate criacao = t.getDataCriacao().toLocalDate();
-            LocalDate prazo = t.getDataPrazo();
-            boolean matches = true;
-            if (startDate != null) matches = matches && (criacao.isAfter(startDate.minusDays(1)) || prazo.isAfter(startDate.minusDays(1)));
-            if (endDate != null) matches = matches && (criacao.isBefore(endDate.plusDays(1)) || prazo.isBefore(endDate.plusDays(1)));
-            return matches;
-        }).collect(Collectors.toList());
+        // Atrasadas: Pendentes cuja data de prazo já passou (Global ou no filtro)
+        long atrasadas = tarefaRepository.countAtrasadas(); // Pegamos o status global de "atraso agora"
 
-        // 2. Filtragem Analítica (Métricas de %, Produtividade e Ranking)
-        // Baseada estritamente na Data de Conclusão (para quem terminou)
-        List<Tarefa> baseAnalitica = todas.stream().filter(t -> {
-            if (t.getStatus() != Status.CONCLUIDA || t.getDataConclusao() == null) return false;
-            LocalDate conclusao = t.getDataConclusao().toLocalDate();
-            if (startDate == null && endDate == null) return true;
-            boolean matches = true;
-            if (startDate != null) matches = matches && conclusao.isAfter(startDate.minusDays(1));
-            if (endDate != null) matches = matches && conclusao.isBefore(endDate.plusDays(1));
-            return matches;
-        }).collect(Collectors.toList());
+        // 3. Cálculos Analíticos (Apenas se houver conclusões)
+        List<Tarefa> tarefasPerformance;
+        if (concluidaCount > 0 || analyticalMode) {
+            // Buscamos apenas as CONCLUIDAS no período para o ranking e aderência
+            // Isso evita carregar as 5000 tarefas se apenas 1000 forem concluídas
+            tarefasPerformance = tarefaRepository.findAll().stream()
+                .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getDataConclusao() != null)
+                .filter(t -> {
+                    LocalDate d = t.getDataConclusao().toLocalDate();
+                    return (startDate == null || !d.isBefore(startDate)) && (endDate == null || !d.isAfter(endDate));
+                }).collect(Collectors.toList());
+        } else {
+            tarefasPerformance = Collections.emptyList();
+        }
 
-        // --- Cálculos Operacionais ---
-        long total = baseOperacional.size();
-        long pendente = baseOperacional.stream().filter(t -> t.getStatus() == Status.PENDENTE).count();
-        long emAndamento = baseOperacional.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count();
-        long concluida = baseOperacional.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count();
-        long atrasada = baseOperacional.stream().filter(t -> t.getStatus() == Status.ATRASADA || (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now()))).count();
-
-        // --- Cálculos Analíticos (Garantindo que o denominador venha da mesma base) ---
-        long esforcoConcluido = baseAnalitica.stream()
+        long esforcoConcluido = tarefasPerformance.stream()
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
-        
-        // IMPORTANTE: Para a porcentagem de produtividade, o esforço TOTAL deve ser o da base analítica
-        // ou usamos um denominador fixo. Vamos usar a soma das concluídas na base analítica.
-        long aderenciaGestorSim = baseAnalitica.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
-        long aderenciaColabSim = baseAnalitica.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
-        // Cálculo de Horas (Capacidade) - Mantemos a lógica histórica que já estava boa
+        long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
+        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
+
+        // Cálculo de Carga Horária Est. (Histórico de equipe)
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         long totalHorasEst = 0;
         LocalDate filterStart = startDate != null ? startDate : LocalDate.now().minusDays(30);
@@ -347,11 +338,11 @@ public class TarefaController {
             }
         }
         
-        long concluidasHorasEst = esforcoConcluido * 5; // 1pt = 5h conforme definido
+        long concluidasHorasEst = esforcoConcluido * 5;
 
-        // Ranking
+        // Ranking (Top 5)
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
-        baseAnalitica.forEach(t -> {
+        tarefasPerformance.forEach(t -> {
             Usuario executor = t.getConcluidoPor();
             if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().get(0);
             if (executor != null) {
@@ -371,7 +362,7 @@ public class TarefaController {
                     return item;
                 }).collect(Collectors.toList());
 
-        // Turnover (estático para os últimos 6 meses)
+        // Turnover
         List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate mesRef = LocalDate.now().minusMonths(i);
@@ -388,13 +379,13 @@ public class TarefaController {
         stats.put("total", total);
         stats.put("pendente", pendente);
         stats.put("em_andamento", emAndamento);
-        stats.put("concluida", concluida);
-        stats.put("atrasada", atrasada);
+        stats.put("concluida", concluidaCount);
+        stats.put("atrasada", atrasadas);
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", total * 3); // Valor referencial
+        stats.put("esforco_total", total * 3); 
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
-        stats.put("aderencia_gestor_nao", baseAnalitica.size() - aderenciaGestorSim);
+        stats.put("aderencia_gestor_nao", Math.max(0, tarefasPerformance.size() - aderenciaGestorSim));
         stats.put("aderencia_colab_sim", aderenciaColabSim);
         stats.put("total_horas_est", totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
