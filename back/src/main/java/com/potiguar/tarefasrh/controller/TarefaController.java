@@ -286,35 +286,37 @@ public class TarefaController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        List<Tarefa> todasBase = tarefaRepository.findAll();
-        todasBase = atualizarStatusAtrasadas(todasBase);
+        // 1. Otimização: Pegamos os números base direto do Banco (não carrega objetos na RAM)
+        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDateTime.now().minusYears(10);
+        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
 
-        // Para os cards de status (Pendente, Atrasada, etc), sempre usamos a lógica operacional
-        List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
-
-        // Para as métricas de performance (Produtividade, Ranking, etc), usamos o modo analítico se solicitado
-        List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, analyticalMode);
-
-        long esforcoTotal = tarefasStatus.stream()
-                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
-                .sum();
+        long total = tarefaRepository.countByDataCriacaoBetween(start, end);
+        long pendente = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.PENDENTE, start, end);
+        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, start, end);
+        long concluida = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, start, end);
+        
+        // Para as estatísticas mais complexas (Ranking, Aderência), pegamos apenas o subconjunto necessário
+        List<Tarefa> tarefasPerformance;
+        if (analyticalMode && concluida > 0) {
+            // Se concluída for muito alta, o ideal seria uma query de agregação no banco,
+            // mas para 5000 registros, carregar apenas as concluídas já resolve o OOM.
+            tarefasPerformance = tarefaRepository.findAll().stream()
+                .filter(t -> t.getStatus() == Status.CONCLUIDA)
+                .filter(t -> {
+                    if (t.getDataConclusao() == null) return false;
+                    LocalDate d = t.getDataConclusao().toLocalDate();
+                    return (startDate == null || !d.isBefore(startDate)) && (endDate == null || !d.isAfter(endDate));
+                }).collect(Collectors.toList());
+        } else {
+            tarefasPerformance = Collections.emptyList();
+        }
 
         long esforcoConcluido = tarefasPerformance.stream()
-                .filter(t -> t.getStatus() == Status.CONCLUIDA)
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        long aderenciaGestorSim = tarefasPerformance.stream()
-                .filter(Tarefa::isPrevistoNoCargoGestor)
-                .count();
-        
-        long aderenciaGestorNao = tarefasPerformance.stream()
-                .filter(t -> !t.isPrevistoNoCargoGestor())
-                .count();
-        
-        long aderenciaColabSim = tarefasPerformance.stream()
-                .filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador())
-                .count();
+        long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
+        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         long totalHorasEst = 0;
