@@ -48,7 +48,7 @@ public class GoogleSheetsService {
     );
 
     @org.springframework.scheduling.annotation.Async
-    @jakarta.transaction.Transactional(readOnly = true)
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public void syncAllTasks() {
         if (spreadsheetId.isEmpty()) {
             return;
