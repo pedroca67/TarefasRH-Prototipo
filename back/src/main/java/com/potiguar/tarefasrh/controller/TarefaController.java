@@ -323,14 +323,24 @@ public class TarefaController {
         // Cálculo de Carga Horária Est. (Histórico de equipe)
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         long totalHorasEst = 0;
-        LocalDate filterStart = startDate != null ? startDate : LocalDate.now().minusDays(30);
+        
+        // Determinar o início real do histórico se "Todo o período" for selecionado
+        LocalDate dataMinimaAdmissao = todosUsuarios.stream()
+                .map(u -> u.getDataCriacao().toLocalDate())
+                .min(LocalDate::compareTo)
+                .orElse(LocalDate.now().minusDays(30));
+
+        LocalDate filterStart = startDate != null ? startDate : dataMinimaAdmissao;
         LocalDate filterEnd = endDate != null ? endDate : LocalDate.now();
 
         for (Usuario u : todosUsuarios) {
             LocalDate admission = u.getDataCriacao().toLocalDate();
             LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
+            
+            // Período de atividade do colaborador dentro da janela do filtro
             LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
+            
             if (!activeStart.isAfter(activeEnd)) {
                 long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
                 totalHorasEst += (activeDays * 40 / 7);
