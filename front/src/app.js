@@ -156,14 +156,14 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
         const hoje = new Date();
 
         if (periodo === 'semana') {
-            const d = new Date(hoje);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            const start = new Date(d.setDate(diff));
+            // Calcula os últimos 7 dias a partir de hoje (Janela Deslizante)
+            const start = new Date(hoje);
+            start.setDate(hoje.getDate() - 7);
             start.setHours(0,0,0,0);
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
+            
+            const end = new Date();
             end.setHours(23,59,59,999);
+
             startDate = start.toISOString().split('T')[0];
             endDate = end.toISOString().split('T')[0];
         } else if (periodo === 'mes') {
@@ -241,14 +241,14 @@ app.get('/tarefas', authMiddleware, async (req, res) => {
         const hoje = new Date();
 
         if (periodo === 'semana') {
-            const d = new Date(hoje);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            const start = new Date(d.setDate(diff));
+            // Calcula os últimos 7 dias a partir de hoje (Janela Deslizante)
+            const start = new Date(hoje);
+            start.setDate(hoje.getDate() - 7);
             start.setHours(0,0,0,0);
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
+            
+            const end = new Date();
             end.setHours(23,59,59,999);
+
             startDate = start.toISOString().split('T')[0];
             endDate = end.toISOString().split('T')[0];
         } else if (periodo === 'mes') {
