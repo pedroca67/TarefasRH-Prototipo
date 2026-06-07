@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tarefa")
@@ -71,7 +71,7 @@ public class Tarefa {
 
     @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Feedback> feedbacks = new ArrayList<>();
+    private Set<Feedback> feedbacks = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "concluido_por")
@@ -88,7 +88,7 @@ public class Tarefa {
         inverseJoinColumns = @JoinColumn(name = "usuario_id")
     )
     @Builder.Default
-    private List<Usuario> responsaveis = new ArrayList<>();
+    private Set<Usuario> responsaveis = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "time_id")

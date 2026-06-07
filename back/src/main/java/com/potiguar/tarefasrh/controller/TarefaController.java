@@ -129,9 +129,9 @@ public class TarefaController {
             return ResponseEntity.badRequest().body("Selecione apenas um tipo de atribuição.");
         }
         if (tarefa.getResponsaveis() != null) {
-            List<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
+            java.util.Set<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
                     .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
             tarefa.setResponsaveis(responsaveisCompletos);
         }
         if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
