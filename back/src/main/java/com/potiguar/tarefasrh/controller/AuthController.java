@@ -18,10 +18,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         String identificador = request.getEmail();
-        return usuarioRepository.findByEmailOrCodigoFuncionario(identificador, identificador)
-                .filter(u -> passwordEncoder.matches(request.getSenha(), u.getSenha()))
-                .filter(Usuario::isAtivo)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(401).build());
+        Usuario usuario = usuarioRepository.findByEmailOrCodigoFuncionario(identificador, identificador).orElse(null);
+
+        if (usuario == null || !passwordEncoder.matches(request.getSenha(), usuario.getSenha())) {
+            return ResponseEntity.status(401).body("E-mail ou senha inválidos.");
+        }
+
+        if (!usuario.isAtivo()) {
+            return ResponseEntity.status(403).body("Esta conta foi desativada pelo RH. Entre em contato com seu gestor.");
+        }
+
+        return ResponseEntity.ok(usuario);
     }
 }

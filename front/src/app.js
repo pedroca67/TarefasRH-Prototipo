@@ -109,7 +109,10 @@ app.post('/login', async (req, res) => {
         req.session.usuario = response.data;
         res.redirect('/dashboard');
     } catch (error) {
-        res.render('auth/login', { error: 'E-mail ou senha inválidos', email });
+        const mensagemErro = error.response && error.response.data && typeof error.response.data === 'string'
+            ? error.response.data 
+            : 'E-mail ou senha inválidos';
+        res.render('auth/login', { error: mensagemErro, email });
     }
 });
 
