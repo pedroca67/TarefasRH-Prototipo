@@ -131,7 +131,13 @@
                     <i class="bi bi-person-plus me-1"></i>Criado por: <%= tarefa.criadoPor ? tarefa.criadoPor.nome : 'Sistema' %>
                 </div>
               </td>
-              <td><i class="bi bi-person me-1"></i><%= respTime %></td>
+              <td>
+                <% if (tarefa.time) { %>
+                    <i class="bi bi-diagram-3 me-1"></i><%= tarefa.time.nome %>
+                <% } else { %>
+                    <i class="bi bi-person me-1"></i><%= respNames || '-' %>
+                <% } %>
+              </td>
               <td class="<%= isAtrasadaVisual ? 'text-danger fw-bold' : '' %>">
                 <%= new Date(tarefa.dataPrazo).toLocaleDateString('pt-BR') %>
                 <% if (isAtrasadaVisual) { %><i class="bi bi-exclamation-triangle-fill ms-1"></i><% } %>

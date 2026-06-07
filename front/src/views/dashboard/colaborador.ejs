@@ -354,10 +354,12 @@
 
             let respHtml = '';
             if (type === 'team') {
+                const isTeam = tarefa.time != null;
+                const icon = isTeam ? 'bi-diagram-3' : 'bi-person';
                 const respNames = (tarefa.responsaveis && tarefa.responsaveis.length > 0)
                     ? tarefa.responsaveis.map(r => r.nome).join(', ')
                     : (tarefa.time ? tarefa.time.nome : '-');
-                respHtml = `<td>${respNames}</td>`;
+                respHtml = `<td><i class="bi ${icon} me-1"></i>${respNames}</td>`;
             }
 
             tr.innerHTML = `
