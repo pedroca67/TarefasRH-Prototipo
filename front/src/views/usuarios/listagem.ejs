@@ -2,10 +2,49 @@
 <%- include('../partials/navbar') %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Gestão de Usuários</h1>
-    <button class="btn btn-potiguar" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+    <h1 class="h3 mb-0 fw-bold">Gestão de Usuários</h1>
+    <button class="btn btn-potiguar fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">
         <i class="bi bi-person-plus me-1"></i> Novo Usuário
     </button>
+</div>
+
+<!-- Filtros de Pesquisa -->
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body p-3">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="userSearch" class="form-control border-start-0" placeholder="Buscar por nome, e-mail ou código...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="filterLoja" class="form-select form-select-sm">
+                    <option value="">Todas as Lojas</option>
+                    <option value="Cohama">Cohama</option>
+                    <option value="Forquilha">Forquilha</option>
+                    <option value="Olho D'Água">Olho D'Água</option>
+                    <option value="Centro">Centro</option>
+                    <option value="Cohafuma">Cohafuma</option>
+                    <option value="Africanos">Africanos</option>
+                    <option value="Maiobão">Maiobão</option>
+                    <option value="Imperatriz">Imperatriz</option>
+                    <option value="Bacabal">Bacabal</option>
+                    <option value="Santa Inês">Santa Inês</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="filterNivel" class="form-select form-select-sm">
+                    <option value="">Todos Níveis</option>
+                    <option value="GESTOR">Gestor</option>
+                    <option value="COLABORADOR">Colaborador</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button onclick="clearUserFilters()" class="btn btn-sm btn-outline-secondary w-100">Limpar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0">
@@ -25,9 +64,14 @@
             <th class="text-end pe-3 border-0">Ações</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="usersTableBody">
           <% usuarios.forEach(u => { %>
-            <tr class="align-middle">
+            <tr class="align-middle" 
+                data-nome="<%= u.nome.toLowerCase() %>" 
+                data-email="<%= u.email.toLowerCase() %>" 
+                data-codigo="<%= u.codigoFuncionario || '' %>"
+                data-loja="<%= u.loja || '' %>"
+                data-nivel="<%= u.nivel %>">
               <td class="ps-3">
                 <img src="<%= u.fotoUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + u.nome.replace(' ', '') %>" 
                      class="rounded-circle border" width="36" height="36" alt="<%= u.nome %>">
@@ -37,7 +81,13 @@
               <td><%= u.email %></td>
               <td><span class="text-muted small fw-bold"><%= u.loja || '-' %></span></td>
               <td><%= u.time ? u.time.nome : '-' %></td>
-              <td><span class="badge bg-light text-dark border"><%= u.nivel %></span></td>
+              <td>
+                <% if (u.nivel === 'GESTOR') { %>
+                    <span class="badge bg-potiguar px-2 py-1" style="font-size: 0.65rem;">GESTOR</span>
+                <% } else { %>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="font-size: 0.65rem;">COLABORADOR</span>
+                <% } %>
+              </td>
               <td>
                 <span class="badge <%= u.ativo ? 'bg-success' : 'bg-danger' %>">
                   <%= u.ativo ? 'Ativo' : 'Inativo' %>
@@ -47,14 +97,21 @@
                 <a href="/usuarios/<%= u.id %>" class="btn btn-sm btn-outline-primary py-0 me-1">
                   <i class="bi bi-eye"></i> Detalhes
                 </a>
-                <form action="/usuarios/<%= u.id %>/toggle" method="POST" class="d-inline" 
-                      data-confirm-title="<%= u.ativo ? 'Desativar' : 'Ativar' %> Usuário?"
-                      data-confirm-text="Deseja realmente <%= u.ativo ? 'desativar' : 'ativar' %> o acesso deste colaborador?"
-                      onsubmit="return confirmarAcao(event, this.dataset.confirmTitle, this.dataset.confirmText)">
-                  <button class="btn btn-sm <%= u.ativo ? 'btn-outline-warning' : 'btn-outline-success' %> py-0">
-                    <%= u.ativo ? 'Desativar' : 'Ativar' %>
-                  </button>
-                </form>
+                
+                <% if (u.nivel !== 'GESTOR') { %>
+                    <form action="/usuarios/<%= u.id %>/toggle" method="POST" class="d-inline" 
+                          data-confirm-title="<%= u.ativo ? 'Desativar' : 'Ativar' %> Usuário?"
+                          data-confirm-text="Deseja realmente <%= u.ativo ? 'desativar' : 'ativar' %> o acesso deste colaborador?"
+                          onsubmit="return confirmarAcao(event, this.dataset.confirmTitle, this.dataset.confirmText)">
+                      <button class="btn btn-sm <%= u.ativo ? 'btn-outline-warning' : 'btn-outline-success' %> py-0">
+                        <%= u.ativo ? 'Desativar' : 'Ativar' %>
+                      </button>
+                    </form>
+                <% } else { %>
+                    <button class="btn btn-sm btn-light py-0 disabled" title="Gestores só podem ser desativados via Banco de Dados" style="cursor: not-allowed; opacity: 0.5;">
+                        Bloqueado
+                    </button>
+                <% } %>
               </td>
             </tr>
           <% }) %>
@@ -141,6 +198,38 @@
 </div>
 
 <script>
+    function applyUserFilters() {
+        const search = document.getElementById('userSearch').value.toLowerCase();
+        const loja = document.getElementById('filterLoja').value;
+        const nivel = document.getElementById('filterNivel').value;
+        
+        const rows = document.querySelectorAll('#usersTableBody tr');
+        rows.forEach(row => {
+            const matchesSearch = row.dataset.nome.includes(search) || 
+                                row.dataset.email.includes(search) || 
+                                row.dataset.codigo.includes(search);
+            const matchesLoja = loja === "" || row.dataset.loja === loja;
+            const matchesNivel = nivel === "" || row.dataset.nivel === nivel;
+            
+            if (matchesSearch && matchesLoja && matchesNivel) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function clearUserFilters() {
+        document.getElementById('userSearch').value = '';
+        document.getElementById('filterLoja').value = '';
+        document.getElementById('filterNivel').value = '';
+        applyUserFilters();
+    }
+
+    document.getElementById('userSearch').addEventListener('input', applyUserFilters);
+    document.getElementById('filterLoja').addEventListener('change', applyUserFilters);
+    document.getElementById('filterNivel').addEventListener('change', applyUserFilters);
+
     document.addEventListener('DOMContentLoaded', () => {
         paginarTabela('usuariosTable', 10);
     });
