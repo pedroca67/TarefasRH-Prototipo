@@ -253,42 +253,20 @@ public class TarefaController {
         // --- Top Atrasadas para o Dashboard ---
         stats.put("topAtrasadas", tarefaRepository.findTopAtrasadas(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5)));
 
-        // For more complex analytical stats (ranking, effort), we still might need some data, 
-        // but let's at least optimize the bulk of it.
-        // To keep the prototype functional with minimal changes, I'll keep the ranking logic for now 
-        // but scoped to the filtered period.
+        // --- Ranking Otimizado ---
+        List<Object[]> rankingRaw = tarefaRepository.findRankingData(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5));
+        List<Map<String, Object>> ranking = rankingRaw.stream().map(row -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("nome", row[0]);
+            item.put("pontos", row[1]);
+            return item;
+        }).collect(Collectors.toList());
+        stats.put("ranking", ranking);
 
-        List<Tarefa> performanceBase = tarefaRepository.findComFiltros(null, null, Status.CONCLUIDA, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
-
-        long esforcoConcluido = performanceBase.stream()
-                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
-                .sum();
-
+        // --- Esforço Concluído ---
+        long esforcoConcluido = tarefaRepository.sumEsforcoConcluido(startDateTime, endDateTime);
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("concluidas_horas_est", esforcoConcluido * 3);
-
-        // Ranking
-        Map<String, Long> pontosPorUsuario = new HashMap<>();
-        performanceBase.forEach(t -> {
-            Usuario executor = t.getConcluidoPor();
-            if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().get(0);
-            if (executor != null) {
-                long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                pontosPorUsuario.put(executor.getNome(), pontosPorUsuario.getOrDefault(executor.getNome(), 0L) + pontos);
-            }
-        });
-
-        List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-                .limit(5)
-                .map(e -> {
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("nome", e.getKey());
-                    item.put("pontos", e.getValue());
-                    return item;
-                }).collect(Collectors.toList());
-
-        stats.put("ranking", ranking);
         
         // Capacity calculation (remains somewhat manual for now but optimized)
         List<Usuario> todosUsuarios = usuarioRepository.findAll();

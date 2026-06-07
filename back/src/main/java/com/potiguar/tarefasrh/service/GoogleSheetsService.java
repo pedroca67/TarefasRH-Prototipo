@@ -31,6 +31,9 @@ public class GoogleSheetsService {
 
     private final TarefaRepository tarefaRepository;
     private final com.potiguar.tarefasrh.repository.UsuarioRepository usuarioRepository;
+    
+    // Lock para evitar múltiplas sincronizações simultâneas que causem OOM
+    private static final java.util.concurrent.atomic.AtomicBoolean IS_SYNCING = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     @Value("${google.sheets.id:}")
     private String spreadsheetId;
@@ -49,13 +52,19 @@ public class GoogleSheetsService {
         if (spreadsheetId.isEmpty()) {
             return;
         }
+        
+        // Se já estiver sincronizando, ignora esta chamada (debounce/lock)
+        if (!IS_SYNCING.compareAndSet(false, true)) {
+            System.out.println("Sincronização já em andamento. Ignorando nova chamada para poupar memória.");
+            return;
+        }
 
         try {
             Sheets service = getSheetsService();
             
             // --- ABA 1: BASE_TAREFAS ---
-            // Note: In a massive scale, we should use a cursor or stream here.
-            List<Tarefa> tarefas = tarefaRepository.findAll(); 
+            // Busca apenas o necessário com joins otimizados
+            List<Tarefa> tarefas = tarefaRepository.findTarefasForExport(); 
             List<List<Object>> valuesTarefas = new ArrayList<>();
             valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             
@@ -71,7 +80,7 @@ public class GoogleSheetsService {
                 }
                 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                String feedbacks = t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | "));
+                String feedbacks = t.getFeedbacks() != null ? t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | ")) : "-";
 
                 valuesTarefas.add(Arrays.asList(
                     t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
@@ -88,7 +97,7 @@ public class GoogleSheetsService {
             }
 
             // --- ABA 2: BASE_TURNOVER ---
-            List<com.potiguar.tarefasrh.model.Usuario> usuarios = usuarioRepository.findAll();
+            List<com.potiguar.tarefasrh.model.Usuario> usuarios = tarefaRepository.findUsuariosForExport();
 
             List<List<Object>> valuesTurnover = new ArrayList<>();
             valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
@@ -121,31 +130,18 @@ public class GoogleSheetsService {
                 java.time.YearMonth targetMonth = currentMonth.minusMonths(i);
                 String key = targetMonth.getYear() + "-" + String.format("%02d", targetMonth.getMonthValue());
                 
-                // Cálculo dinâmico de funcionários ativos NAQUELE mês específico
+                // Cálculo dinâmico de ativos
+                final java.time.YearMonth tm = targetMonth;
                 long employeesActiveInMonth = usuarios.stream().filter(u -> {
                     java.time.LocalDateTime admission = u.getDataCriacao();
                     java.time.LocalDateTime deactivation = u.getDataDesativacao();
-                    
-                    // Admitido até o fim do mês alvo
-                    boolean admitted = admission != null && 
-                                     (admission.getYear() < targetMonth.getYear() || 
-                                     (admission.getYear() == targetMonth.getYear() && admission.getMonthValue() <= targetMonth.getMonthValue()));
-                    
-                    // Ainda não desativado OU desativado após o início do mês alvo
-                    boolean notYetDeactivated = deactivation == null || 
-                                              (deactivation.getYear() > targetMonth.getYear() || 
-                                              (deactivation.getYear() == targetMonth.getYear() && deactivation.getMonthValue() >= targetMonth.getMonthValue()));
-                    
+                    boolean admitted = admission != null && (admission.getYear() < tm.getYear() || (admission.getYear() == tm.getYear() && admission.getMonthValue() <= tm.getMonthValue()));
+                    boolean notYetDeactivated = deactivation == null || (deactivation.getYear() > tm.getYear() || (deactivation.getYear() == tm.getYear() && deactivation.getMonthValue() >= tm.getMonthValue()));
                     return admitted && notYetDeactivated;
                 }).count();
 
                 double entregue = horasPorMes.getOrDefault(key, 0.0);
-                
-                valuesResumo.add(Arrays.asList(
-                    key,
-                    employeesActiveInMonth * 160, // Horas base baseadas no time da época
-                    entregue
-                ));
+                valuesResumo.add(Arrays.asList(key, employeesActiveInMonth * 160, entregue));
             }
 
             // --- ABA 4: LOOKER_DASHBOARD (LIMPA E RÁPIDA) ---
@@ -156,63 +152,36 @@ public class GoogleSheetsService {
                 String responsaveisLabel;
                 if (t.getTime() != null) {
                     responsaveisLabel = "Time: " + t.getTime().getNome();
-                } else {
+                } else if (t.getResponsaveis() != null) {
                     String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
                     responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
+                } else {
+                    responsaveisLabel = "-";
                 }
 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 valuesLooker.add(Arrays.asList(
-                    t.getTitulo(),
-                    responsaveisLabel,
-                    t.getTime() != null ? t.getTime().getNome() : "-",
+                    t.getTitulo(), responsaveisLabel, t.getTime() != null ? t.getTime().getNome() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getLoja() : (t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-"),
-                    t.getCategoria().toString(),
-                    t.getStatus().toString(),
-                    t.getComplexidade().toString(),
-                    esforco,
-                    esforco * 3, // 1pt = 3h
-                    t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                    t.getCategoria().toString(), t.getStatus().toString(), t.getComplexidade().toString(),
+                    esforco, esforco * 3, t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
-                    t.getDataPrazo().toString(),
-                    t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-"
+                    t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-"
                 ));
             }
 
-            // Sincronização Individual por Aba (para evitar que uma aba trancada pare o sistema todo)
-            try {
-                System.out.println("Sincronizando BASE_TAREFAS...");
-                updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas);
-            } catch (Exception e) {
-                System.err.println("⚠️ Aviso: Não foi possível atualizar BASE_TAREFAS. Verifique se a aba está protegida. Erro: " + e.getMessage());
-            }
-
-            try {
-                System.out.println("Sincronizando BASE_TURNOVER...");
-                updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover);
-            } catch (Exception e) {
-                System.err.println("⚠️ Aviso: Não foi possível atualizar BASE_TURNOVER. Erro: " + e.getMessage());
-            }
-
-            try {
-                System.out.println("Sincronizando RESUMO_METRICAS...");
-                updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo);
-            } catch (Exception e) {
-                System.err.println("⚠️ Aviso: Não foi possível atualizar RESUMO_METRICAS. Erro: " + e.getMessage());
-            }
-
-            try {
-                System.out.println("Sincronizando LOOKER_DASHBOARD...");
-                updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker);
-            } catch (Exception e) {
-                System.err.println("⚠️ Aviso: Não foi possível atualizar LOOKER_DASHBOARD. Erro: " + e.getMessage());
-            }
+            // Sincronização Individual por Aba
+            try { updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas); } catch (Exception e) { System.err.println("Erro BASE_TAREFAS: " + e.getMessage()); }
+            try { updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover); } catch (Exception e) { System.err.println("Erro BASE_TURNOVER: " + e.getMessage()); }
+            try { updateSheet(service, "RESUMO_METRICAS!A1", valuesResumo); } catch (Exception e) { System.err.println("Erro RESUMO_METRICAS: " + e.getMessage()); }
+            try { updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker); } catch (Exception e) { System.err.println("Erro LOOKER_DASHBOARD: " + e.getMessage()); }
 
             System.out.println("✅ Sincronização Google Sheets finalizada.");
 
         } catch (Exception e) {
             System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());
-            e.printStackTrace();
+        } finally {
+            IS_SYNCING.set(false); // Libera o lock
         }
     }
 

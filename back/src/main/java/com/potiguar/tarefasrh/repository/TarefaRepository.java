@@ -60,6 +60,19 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.previstoNoCargoGestor = :previsto AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countByAderenciaGestor(@org.springframework.data.repository.query.Param("previsto") boolean previsto, java.time.LocalDateTime start, java.time.LocalDateTime end);
 
-    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND t.dataCriacao >= :start AND t.dataCriacao <= :end ORDER BY t.dataPrazo ASC")
-    List<Tarefa> findTopAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN FETCH t.responsaveis LEFT JOIN FETCH t.time LEFT JOIN FETCH t.criadoPor LEFT JOIN FETCH t.feedbacks LEFT JOIN FETCH t.concluidoPor")
+    List<Tarefa> findTarefasForExport();
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN FETCH u.time")
+    List<Usuario> findUsuariosForExport();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(t.concluidoPor.nome, r.nome), SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) as pontos " +
+            "FROM Tarefa t LEFT JOIN t.responsaveis r " +
+            "WHERE t.status = 'CONCLUIDA' AND t.dataConclusao >= :start AND t.dataConclusao <= :end " +
+            "GROUP BY COALESCE(t.concluidoPor.nome, r.nome) ORDER BY pontos DESC")
+    List<Object[]> findRankingData(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END), 0) " +
+            "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao >= :start AND t.dataConclusao <= :end")
+    long sumEsforcoConcluido(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }
