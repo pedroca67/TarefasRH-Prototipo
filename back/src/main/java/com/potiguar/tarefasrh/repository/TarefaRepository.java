@@ -15,9 +15,12 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countByDataCriacaoBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = 'PENDENTE' AND t.dataPrazo >= CURRENT_DATE AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
+    long countPendentesNaoAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
+    long countAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = :status AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countByStatusAndDataCriacaoBetween(Status status, java.time.LocalDateTime start, java.time.LocalDateTime end);
-
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE")
-    long countAtrasadas();
 }

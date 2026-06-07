@@ -291,19 +291,18 @@ public class TarefaController {
         LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
 
         // 2. Cálculos Operacionais DIRETO no Banco (Rápido e Seguro)
-        long total = tarefaRepository.countByDataCriacaoBetween(start, end);
-        long pendente = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.PENDENTE, start, end);
+        long pendente = tarefaRepository.countPendentesNaoAtrasadas(start, end);
+        long atrasadas = tarefaRepository.countAtrasadas(start, end);
         long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, start, end);
         long concluidaCount = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, start, end);
         
-        // Atrasadas: Pendentes cuja data de prazo já passou (Global ou no filtro)
-        long atrasadas = tarefaRepository.countAtrasadas(); // Pegamos o status global de "atraso agora"
+        long total = pendente + emAndamento + concluidaCount + atrasadas;
 
         // 3. Cálculos Analíticos (Apenas se houver conclusões)
         List<Tarefa> tarefasPerformance;
         if (concluidaCount > 0 || analyticalMode) {
-            // Buscamos apenas as CONCLUIDAS no período para o ranking e aderência
-            // Isso evita carregar as 5000 tarefas se apenas 1000 forem concluídas
+            // Buscamos as CONCLUIDAS no período para o ranking e aderência
+            // Usamos a Data de Conclusão para métricas de performance
             tarefasPerformance = tarefaRepository.findAll().stream()
                 .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getDataConclusao() != null)
                 .filter(t -> {
