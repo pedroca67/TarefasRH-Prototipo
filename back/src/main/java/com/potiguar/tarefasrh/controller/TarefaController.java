@@ -241,11 +241,17 @@ public class TarefaController {
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", tarefaRepository.countByDataCriacaoBetween(startDateTime, endDateTime));
         stats.put("pendente", tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime));
-        stats.put("concluida", tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, startDateTime, endDateTime));
+        stats.put("concluida", tarefaRepository.findComFiltros(null, null, Status.CONCLUIDA, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements());
         stats.put("atrasada", tarefaRepository.countAtrasadas(startDateTime, endDateTime));
-        stats.put("em_andamento", tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, startDateTime, endDateTime));
+        stats.put("em_andamento", tarefaRepository.findComFiltros(null, null, Status.EM_ANDAMENTO, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements());
         
+        stats.put("aderencia_gestor_sim", tarefaRepository.countByAderenciaGestor(true, startDateTime, endDateTime));
+        stats.put("aderencia_gestor_nao", tarefaRepository.countByAderenciaGestor(false, startDateTime, endDateTime));
+
         stats.put("total_times", timeRepository.count());
+
+        // --- Top Atrasadas para o Dashboard ---
+        stats.put("topAtrasadas", tarefaRepository.findTopAtrasadas(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5)));
 
         // For more complex analytical stats (ranking, effort), we still might need some data, 
         // but let's at least optimize the bulk of it.

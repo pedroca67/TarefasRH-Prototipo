@@ -57,6 +57,9 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
     long countAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.status = :status AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
-    long countByStatusAndDataCriacaoBetween(Status status, java.time.LocalDateTime start, java.time.LocalDateTime end);
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.previstoNoCargoGestor = :previsto AND t.dataCriacao >= :start AND t.dataCriacao <= :end")
+    long countByAderenciaGestor(@org.springframework.data.repository.query.Param("previsto") boolean previsto, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND t.dataCriacao >= :start AND t.dataCriacao <= :end ORDER BY t.dataPrazo ASC")
+    List<Tarefa> findTopAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
 }
