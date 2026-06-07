@@ -44,8 +44,6 @@ public class TarefaController {
     private List<Tarefa> atualizarStatusAtrasadas(List<Tarefa> tarefas) {
         LocalDate hoje = LocalDate.now();
         return tarefas.stream().peek(t -> {
-            // Só muda para ATRASADA se estiver PENDENTE e o prazo passou.
-            // Se estiver EM_ANDAMENTO, mantém o status mas o front cuidará da sinalização visual.
             if (t.getStatus() == Status.PENDENTE && t.getDataPrazo().isBefore(hoje)) {
                 t.setStatus(Status.ATRASADA);
             }
@@ -110,31 +108,18 @@ public class TarefaController {
             return emptyPaginatedResponse(page);
         }
 
-        // 1. Filtragem por busca textual, status, complexidade e categoria (Server-Side)
         if (search != null && !search.isBlank()) {
             String s = search.toLowerCase();
             tarefas = tarefas.stream().filter(t -> t.getTitulo().toLowerCase().contains(s)).collect(Collectors.toList());
         }
-        if (status != null) {
-            tarefas = tarefas.stream().filter(t -> t.getStatus() == status).collect(Collectors.toList());
-        }
-        if (complexidade != null) {
-            tarefas = tarefas.stream().filter(t -> t.getComplexidade() == complexidade).collect(Collectors.toList());
-        }
-        if (categoria != null) {
-            tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
-        }
+        if (status != null) tarefas = tarefas.stream().filter(t -> t.getStatus() == status).collect(Collectors.toList());
+        if (complexidade != null) tarefas = tarefas.stream().filter(t -> t.getComplexidade() == complexidade).collect(Collectors.toList());
+        if (categoria != null) tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
         
-        // 2. Filtragem por período
         tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
-        
-        // 3. Atualização de status para a visualização
         tarefas = atualizarStatusAtrasadas(tarefas);
-
-        // 4. Ordenação padrão (mais recentes primeiro)
         tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
 
-        // 5. Paginação
         int totalItems = tarefas.size();
         int totalPages = (int) Math.ceil((double) totalItems / size);
         int start = Math.min(page * size, totalItems);
@@ -157,17 +142,14 @@ public class TarefaController {
         if (!tarefa.getResponsaveis().isEmpty() && tarefa.getTime() != null) {
             return ResponseEntity.badRequest().body("Selecione apenas um tipo de atribuição.");
         }
-
         List<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
                 .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
                 .collect(Collectors.toList());
         tarefa.setResponsaveis(responsaveisCompletos);
-
         if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
             Time timeCompleto = timeRepository.findById(tarefa.getTime().getId()).orElseThrow();
             tarefa.setTime(timeCompleto);
         }
-
         Tarefa salva = tarefaRepository.saveAndFlush(tarefa);
         googleSheetsService.syncAllTasks();
         return ResponseEntity.ok(salva);
@@ -193,22 +175,14 @@ public class TarefaController {
                 String evidencia = body.get("evidencia");
                 String previstoStr = body.get("previstoNoCargoColaborador");
                 String concluidoPorId = body.get("concluidoPorId");
-                
-                if (evidencia == null || evidencia.trim().isEmpty()) {
-                    return ResponseEntity.badRequest().<Tarefa>build();
-                }
-                
+                if (evidencia == null || evidencia.trim().isEmpty()) return ResponseEntity.badRequest().<Tarefa>build();
                 t.setEvidencia(evidencia);
                 t.setDataConclusao(LocalDateTime.now());
-                
                 if (concluidoPorId != null) {
                     Usuario executor = usuarioRepository.findById(Long.parseLong(concluidoPorId)).orElse(null);
                     t.setConcluidoPor(executor);
                 }
-                
-                if (previstoStr != null) {
-                    t.setPrevistoNoCargoColaborador(Boolean.parseBoolean(previstoStr));
-                }
+                if (previstoStr != null) t.setPrevistoNoCargoColaborador(Boolean.parseBoolean(previstoStr));
             } else {
                 t.setDataConclusao(null);
                 t.setConcluidoPor(null);
@@ -226,50 +200,25 @@ public class TarefaController {
         try {
             return tarefaRepository.findById(id).map(t -> {
                 Object gestorIdObj = body.get("gestorId");
-                if (gestorIdObj == null) {
-                    return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
-                }
-                
+                if (gestorIdObj == null) return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
                 Long gestorId = Long.valueOf(gestorIdObj.toString());
                 Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
-                
-                Feedback novoFeedback = Feedback.builder()
-                        .tarefa(t)
-                        .gestor(gestor)
-                        .mensagem(body.get("feedback").toString())
-                        .build();
-                
+                Feedback novoFeedback = Feedback.builder().tarefa(t).gestor(gestor).mensagem(body.get("feedback").toString()).build();
                 Feedback salvo = feedbackRepository.save(novoFeedback);
-
                 String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
-                
                 t.getResponsaveis().forEach(u -> {
-                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
-                            .tipo("FEEDBACK")
-                            .mensagem(msg)
-                            .usuario(u)
-                            .referenciaId(t.getId())
-                            .build());
+                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
                 });
-
                 if (t.getTime() != null) {
-                    usuarioRepository.findAll().stream()
-                            .filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
+                    usuarioRepository.findAll().stream().filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
                             .forEach(u -> {
-                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder()
-                                        .tipo("FEEDBACK")
-                                        .mensagem(msg)
-                                        .usuario(u)
-                                        .referenciaId(t.getId())
-                                        .build());
+                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
                             });
                 }
-
                 googleSheetsService.syncAllTasks();
                 return ResponseEntity.ok(salvo);
             }).orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.internalServerError().body("Erro ao salvar feedback: " + e.getMessage());
         }
     }
@@ -286,45 +235,29 @@ public class TarefaController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        // 1. Definição do Período
-        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDateTime.now().minusYears(10);
-        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
+        List<Tarefa> todasBase = tarefaRepository.findAll();
+        todasBase = atualizarStatusAtrasadas(todasBase);
 
-        // 2. Cálculos Operacionais DIRETO no Banco (Rápido e Seguro)
-        long pendente = tarefaRepository.countPendentesNaoAtrasadas(start, end);
-        long atrasadas = tarefaRepository.countAtrasadas(start, end);
-        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, start, end);
-        long concluidaCount = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, start, end);
-        
-        long total = pendente + emAndamento + concluidaCount + atrasadas;
+        // LÓGICA ORIGINAL: Para os cards de status e produtividade, usamos o mesmo filtro
+        List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
+        List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, true);
 
-        // 3. Cálculos Analíticos (Apenas se houver conclusões)
-        List<Tarefa> tarefasPerformance;
-        if (concluidaCount > 0 || analyticalMode) {
-            // Buscamos as CONCLUIDAS no período para o ranking e aderência
-            // Usamos a Data de Conclusão para métricas de performance
-            tarefasPerformance = tarefaRepository.findAll().stream()
-                .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getDataConclusao() != null)
-                .filter(t -> {
-                    LocalDate d = t.getDataConclusao().toLocalDate();
-                    return (startDate == null || !d.isBefore(startDate)) && (endDate == null || !d.isAfter(endDate));
-                }).collect(Collectors.toList());
-        } else {
-            tarefasPerformance = Collections.emptyList();
-        }
+        long esforcoTotal = tarefasStatus.stream()
+                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
+                .sum();
 
         long esforcoConcluido = tarefasPerformance.stream()
+                .filter(t -> t.getStatus() == Status.CONCLUIDA)
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
         long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
+        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> !t.isPrevistoNoCargoGestor()).count();
         long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
-        // Cálculo de Carga Horária Est. (Histórico de equipe)
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
-        long totalHorasEst = 0;
+        double totalHorasEst = 0;
         
-        // Determinar o início real do histórico se "Todo o período" for selecionado
         LocalDate dataMinimaAdmissao = todosUsuarios.stream()
                 .map(u -> u.getDataCriacao().toLocalDate())
                 .min(LocalDate::compareTo)
@@ -336,29 +269,28 @@ public class TarefaController {
         for (Usuario u : todosUsuarios) {
             LocalDate admission = u.getDataCriacao().toLocalDate();
             LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
-            
-            // Período de atividade do colaborador dentro da janela do filtro
             LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
-            
             if (!activeStart.isAfter(activeEnd)) {
                 long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
-                totalHorasEst += (activeDays * 40 / 7);
+                // USANDO DOUBLE PARA EVITAR ERRO DE DIVISÃO INTEIRA
+                totalHorasEst += (activeDays * (40.0 / 7.0));
             }
         }
         
         long concluidasHorasEst = esforcoConcluido * 5;
 
-        // Ranking (Top 5)
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
-        tarefasPerformance.forEach(t -> {
-            Usuario executor = t.getConcluidoPor();
-            if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().get(0);
-            if (executor != null) {
-                long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
-            }
-        });
+        tarefasPerformance.stream()
+            .filter(t -> t.getStatus() == Status.CONCLUIDA)
+            .forEach(t -> {
+                Usuario executor = t.getConcluidoPor();
+                if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().get(0);
+                if (executor != null) {
+                    long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                    pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
+                }
+            });
 
         List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
@@ -371,7 +303,6 @@ public class TarefaController {
                     return item;
                 }).collect(Collectors.toList());
 
-        // Turnover
         List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate mesRef = LocalDate.now().minusMonths(i);
@@ -385,18 +316,18 @@ public class TarefaController {
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("total", total);
-        stats.put("pendente", pendente);
-        stats.put("em_andamento", emAndamento);
-        stats.put("concluida", concluidaCount);
-        stats.put("atrasada", atrasadas);
+        stats.put("total", (long) tarefasStatus.size());
+        stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
+        stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        stats.put("concluida", tarefasStatus.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count());
+        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", total * 3); 
+        stats.put("esforco_total", esforcoTotal); 
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
-        stats.put("aderencia_gestor_nao", Math.max(0, tarefasPerformance.size() - aderenciaGestorSim));
+        stats.put("aderencia_gestor_nao", aderenciaGestorNao);
         stats.put("aderencia_colab_sim", aderenciaColabSim);
-        stats.put("total_horas_est", totalHorasEst);
+        stats.put("total_horas_est", (long)totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
         stats.put("ranking", ranking);
         stats.put("turnover", turnoverData);
