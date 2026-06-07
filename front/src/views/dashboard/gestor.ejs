@@ -231,10 +231,8 @@
                         </thead>
                         <tbody>
                             <% 
-                                const atrasadasPrioritarias = tarefas
-                                    .filter(t => t.status === 'ATRASADA')
-                                    .sort((a, b) => new Date(a.dataPrazo) - new Date(b.dataPrazo))
-                                    .slice(0, 4);
+                                // Agora usamos a lista otimizada vinda do stats
+                                const atrasadasPrioritarias = (stats.topAtrasadas) ? stats.topAtrasadas : [];
                             %>
                             <% if (atrasadasPrioritarias.length > 0) { %>
                                 <% atrasadasPrioritarias.forEach(t => { %>

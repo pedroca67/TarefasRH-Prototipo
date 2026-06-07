@@ -279,6 +279,13 @@ public class TarefaController {
         // CUIDADO: O multiplicador deve ser o mesmo usado no front e na planilha (3h)
         long concluidasHorasEst = esforcoConcluido * 3;
 
+        // --- Novidade: Lista de Atrasadas para o Dashboard (Top 5 mais urgentes) ---
+        List<Tarefa> topAtrasadas = todasBase.stream()
+                .filter(t -> t.getStatus() == Status.ATRASADA || (t.getStatus() == Status.PENDENTE && t.getDataPrazo().isBefore(LocalDate.now())))
+                .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
+                .limit(5)
+                .collect(Collectors.toList());
+
         // Ranking
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
         tarefasPerformance.stream()
@@ -330,6 +337,7 @@ public class TarefaController {
         stats.put("total_horas_est", (long)totalHorasEst);
         stats.put("concluidas_horas_est", concluidasHorasEst);
         stats.put("ranking", ranking);
+        stats.put("topAtrasadas", topAtrasadas);
         stats.put("turnover", turnoverData);
         
         return stats;
