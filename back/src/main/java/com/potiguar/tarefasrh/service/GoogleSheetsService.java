@@ -77,7 +77,7 @@ public class GoogleSheetsService {
                     t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
-                    t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 5, // 1pt = 5h
+                    t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 3, // 1pt = 3h
                     t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
                     t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
                 ));
