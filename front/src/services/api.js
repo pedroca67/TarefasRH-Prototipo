@@ -2,7 +2,10 @@ const axios = require('axios');
 require('dotenv').config();
 
 const api = axios.create({
-    baseURL: process.env.API_URL
+    baseURL: process.env.API_URL,
+    headers: {
+        'X-API-KEY': 'potiguar_secret_token_2026'
+    }
 });
 
 module.exports = {
@@ -20,7 +23,7 @@ module.exports = {
     // Tarefas
     getTarefas: (responsavelId, timeId, startDate, endDate, page = 0, size = 10, search = '', status = '', complexidade = '', categoria = '') => 
         api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria } }),
-    getTarefa: (id) => api.get(`/tarefas/${id}`),
+    getTarefa: (id, usuarioId) => api.get(`/tarefas/${id}`, { params: { usuarioId } }),
     criarTarefa: (dados) => api.post('/tarefas', dados),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),

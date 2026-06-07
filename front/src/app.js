@@ -341,7 +341,7 @@ app.post('/tarefas', authMiddleware, async (req, res) => {
 
 app.get('/tarefas/:id', authMiddleware, async (req, res) => {
     try {
-        const tarefa = (await apiService.getTarefa(req.params.id)).data;
+        const tarefa = (await apiService.getTarefa(req.params.id, req.session.usuario.id)).data;
         const isGestor = req.session.usuario.nivel === 'GESTOR';
         const isResponsavel = tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === req.session.usuario.id);
         const isDoTime = tarefa.time && req.session.usuario.time && tarefa.time.id === req.session.usuario.time.id;

@@ -91,63 +91,49 @@ public class TarefaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        List<Tarefa> tarefas;
         try {
-            if (responsavelId != null) {
-                Usuario resp = usuarioRepository.findById(responsavelId).orElse(null);
-                if (resp == null) return emptyPaginatedResponse(page);
-                tarefas = tarefaRepository.findByResponsaveisContaining(resp);
-            } else if (timeId != null) {
-                Time time = timeRepository.findById(timeId).orElse(null);
-                if (time == null) return emptyPaginatedResponse(page);
-                tarefas = tarefaRepository.findByTime(time);
-            } else {
-                tarefas = tarefaRepository.findAll();
-            }
+            LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
+            LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : null;
+            
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("dataCriacao").descending());
+            
+            org.springframework.data.domain.Page<Tarefa> pageResult = tarefaRepository.findComFiltros(
+                    responsavelId, timeId, status, complexidade, categoria, 
+                    (search != null && !search.isBlank()) ? search : null, 
+                    startDateTime, endDateTime, pageable);
+
+            // Atualização de status em tempo de execução (apenas visual para o retorno)
+            LocalDate hoje = LocalDate.now();
+            pageResult.getContent().forEach(t -> {
+                if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje)) {
+                    t.setStatus(Status.ATRASADA);
+                }
+            });
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", pageResult.getContent());
+            response.put("currentPage", pageResult.getNumber());
+            response.put("totalItems", pageResult.getTotalElements());
+            response.put("totalPages", pageResult.getTotalPages());
+
+            return response;
         } catch (Exception e) {
             return emptyPaginatedResponse(page);
         }
-
-        // 0. Atualização de status IMEDIATA para garantir que filtros funcionem
-        tarefas = atualizarStatusAtrasadas(tarefas);
-
-        if (search != null && !search.isBlank()) {
-            String s = search.toLowerCase();
-            tarefas = tarefas.stream().filter(t -> t.getTitulo().toLowerCase().contains(s)).collect(Collectors.toList());
-        }
-        if (status != null) tarefas = tarefas.stream().filter(t -> t.getStatus() == status).collect(Collectors.toList());
-        if (complexidade != null) tarefas = tarefas.stream().filter(t -> t.getComplexidade() == complexidade).collect(Collectors.toList());
-        if (categoria != null) tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
-        
-        tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
-        tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
-
-        int totalItems = tarefas.size();
-        int totalPages = (int) Math.ceil((double) totalItems / size);
-        int start = Math.min(page * size, totalItems);
-        int end = Math.min(start + size, totalItems);
-        
-        List<Tarefa> paginatedContent = tarefas.subList(start, end);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", paginatedContent);
-        response.put("currentPage", page);
-        response.put("totalItems", totalItems);
-        response.put("totalPages", totalPages);
-
-        return response;
     }
 
     @PostMapping
     @Transactional
     public ResponseEntity<?> criar(@RequestBody Tarefa tarefa) {
-        if (!tarefa.getResponsaveis().isEmpty() && tarefa.getTime() != null) {
+        if (tarefa.getResponsaveis() != null && !tarefa.getResponsaveis().isEmpty() && tarefa.getTime() != null && tarefa.getTime().getId() != null) {
             return ResponseEntity.badRequest().body("Selecione apenas um tipo de atribuição.");
         }
-        List<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
-                .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                .collect(Collectors.toList());
-        tarefa.setResponsaveis(responsaveisCompletos);
+        if (tarefa.getResponsaveis() != null) {
+            List<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
+                    .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
+                    .collect(Collectors.toList());
+            tarefa.setResponsaveis(responsaveisCompletos);
+        }
         if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
             Time timeCompleto = timeRepository.findById(tarefa.getTime().getId()).orElseThrow();
             tarefa.setTime(timeCompleto);
@@ -158,9 +144,21 @@ public class TarefaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tarefa> buscar(@PathVariable Long id) {
+    public ResponseEntity<Tarefa> buscar(@PathVariable Long id, @RequestParam(required = false) Long usuarioId) {
         return tarefaRepository.findById(id)
                 .map(t -> {
+                    // IDOR Mitigation: Basic check if user is associated with the task or is a manager
+                    if (usuarioId != null) {
+                        Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
+                        if (user != null && user.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
+                            boolean isResponsavel = t.getResponsaveis().stream().anyMatch(r -> r.getId().equals(usuarioId));
+                            boolean isDoTime = t.getTime() != null && user.getTime() != null && t.getTime().getId().equals(user.getTime().getId());
+                            if (!isResponsavel && !isDoTime) {
+                                return ResponseEntity.status(403).<Tarefa>build();
+                            }
+                        }
+                    }
+
                     if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now())) {
                         t.setStatus(Status.ATRASADA);
                     }
@@ -271,8 +269,15 @@ public class TarefaController {
             LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
             if (!activeStart.isAfter(activeEnd)) {
-                long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
-                totalHorasEst += (activeDays * (40.0 / 7.0));
+                long activeDays = 0;
+                LocalDate current = activeStart;
+                while (!current.isAfter(activeEnd)) {
+                    if (current.getDayOfWeek() != java.time.DayOfWeek.SATURDAY && current.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
+                        activeDays++;
+                    }
+                    current = current.plusDays(1);
+                }
+                totalHorasEst += (activeDays * 8.0); // 8h por dia útil
             }
         }
         

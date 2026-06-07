@@ -167,7 +167,7 @@ public class GoogleSheetsService {
                     t.getStatus().toString(),
                     t.getComplexidade().toString(),
                     esforco,
-                    esforco * 5, // 1pt = 5h
+                    esforco * 3, // 1pt = 3h
                     t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getDataPrazo().toString(),
