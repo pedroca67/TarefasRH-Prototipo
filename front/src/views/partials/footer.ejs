@@ -100,8 +100,8 @@
         
         if (totalPages <= 1) return;
 
-        // Recuperar página salva para esta tabela específica
-        let currentPage = parseInt(localStorage.getItem(`pag_${tableId}`) || '1');
+        // MUDANÇA: Usar sessionStorage em vez de localStorage para que expire ao fechar o navegador/aba
+        let currentPage = parseInt(sessionStorage.getItem(`pag_${tableId}`) || '1');
         if (currentPage > totalPages) currentPage = 1;
 
         // Criar container de paginação se não existir
@@ -114,7 +114,7 @@
 
         function showPage(page) {
             currentPage = page;
-            localStorage.setItem(`pag_${tableId}`, page); // Salvar progresso
+            sessionStorage.setItem(`pag_${tableId}`, page); 
             
             const start = (page - 1) * itemsPerPage;
             const end = start + itemsPerPage;
@@ -140,7 +140,7 @@
             ul.appendChild(liPrev);
 
             // Lógica de Janela Deslizante
-            const range = 2; // Mostrar 2 páginas antes e depois
+            const range = 2; 
             for (let i = 1; i <= totalPages; i++) {
                 if (i === 1 || i === totalPages || (i >= currentPage - range && i <= currentPage + range)) {
                     const li = document.createElement('li');
@@ -182,6 +182,19 @@
             window.scrollTo(0, parseInt(savedScroll));
             sessionStorage.removeItem(`scroll_${window.location.pathname}`);
         }
+    }
+
+    // Função para limpar memórias de página ao fazer logout ou trocar de contexto maior
+    function limparMemoriasDeNavegacao() {
+        // Limpa tudo o que começa com pag_ ou scroll_
+        Object.keys(sessionStorage).forEach(key => {
+            if (key.startsWith('pag_') || key.startsWith('scroll_')) {
+                sessionStorage.removeItem(key);
+            }
+        });
+        localStorage.removeItem('colabDashboardActiveTab');
+        localStorage.removeItem('colabDashboardFilters');
+        localStorage.removeItem('dashboardFilters');
     }
 </script>
 </body>
