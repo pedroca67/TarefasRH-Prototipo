@@ -154,11 +154,18 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
 
         let startDate, endDate;
         const hoje = new Date();
+
         if (periodo === 'semana') {
-            const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
-            const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
-            startDate = primeira.toISOString().split('T')[0];
-            endDate = ultima.toISOString().split('T')[0];
+            const d = new Date(hoje);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            const start = new Date(d.setDate(diff));
+            start.setHours(0,0,0,0);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23,59,59,999);
+            startDate = start.toISOString().split('T')[0];
+            endDate = end.toISOString().split('T')[0];
         } else if (periodo === 'mes') {
             startDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
             endDate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -232,11 +239,18 @@ app.get('/tarefas', authMiddleware, async (req, res) => {
 
         let startDate, endDate;
         const hoje = new Date();
+
         if (periodo === 'semana') {
-            const primeira = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
-            const ultima = new Date(hoje.setDate(hoje.getDate() - hoje.getDay() + 6));
-            startDate = primeira.toISOString().split('T')[0];
-            endDate = ultima.toISOString().split('T')[0];
+            const d = new Date(hoje);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            const start = new Date(d.setDate(diff));
+            start.setHours(0,0,0,0);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23,59,59,999);
+            startDate = start.toISOString().split('T')[0];
+            endDate = end.toISOString().split('T')[0];
         } else if (periodo === 'mes') {
             startDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
             endDate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
