@@ -70,7 +70,7 @@ public class GoogleSheetsService {
                     t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
-                    t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 2,
+                    t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 5, // 1pt = 5h
                     t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
                     t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
                 ));
@@ -101,7 +101,7 @@ public class GoogleSheetsService {
                 .filter(t -> t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getDataConclusao() != null)
                 .collect(Collectors.groupingBy(
                     t -> t.getDataConclusao().getYear() + "-" + String.format("%02d", t.getDataConclusao().getMonthValue()),
-                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 2.0)
+                    Collectors.summingDouble(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 5.0) // 1pt = 5h
                 ));
 
             // Adicionar os últimos 12 meses ao resumo
@@ -152,7 +152,7 @@ public class GoogleSheetsService {
                     t.getStatus().toString(),
                     t.getComplexidade().toString(),
                     esforco,
-                    esforco * 2,
+                    esforco * 5, // 1pt = 5h
                     t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getDataPrazo().toString(),
