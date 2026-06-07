@@ -239,11 +239,16 @@ public class TarefaController {
         LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("total", tarefaRepository.countByDataCriacaoBetween(startDateTime, endDateTime));
-        stats.put("pendente", tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime));
-        stats.put("concluida", tarefaRepository.findComFiltros(null, null, Status.CONCLUIDA, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements());
-        stats.put("atrasada", tarefaRepository.countAtrasadas(startDateTime, endDateTime));
-        stats.put("em_andamento", tarefaRepository.findComFiltros(null, null, Status.EM_ANDAMENTO, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements());
+        long pendentes = tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime);
+        long concluidas = tarefaRepository.findComFiltros(null, null, Status.CONCLUIDA, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements();
+        long atrasadas = tarefaRepository.countAtrasadas(startDateTime, endDateTime);
+        long emAndamento = tarefaRepository.findComFiltros(null, null, Status.EM_ANDAMENTO, null, null, null, startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 1)).getTotalElements();
+
+        stats.put("pendente", pendentes);
+        stats.put("concluida", concluidas);
+        stats.put("atrasada", atrasadas);
+        stats.put("em_andamento", emAndamento);
+        stats.put("total", pendentes + concluidas + atrasadas + emAndamento);
         
         stats.put("aderencia_gestor_sim", tarefaRepository.countByAderenciaGestor(true, startDateTime, endDateTime));
         stats.put("aderencia_gestor_nao", tarefaRepository.countByAderenciaGestor(false, startDateTime, endDateTime));
