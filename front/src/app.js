@@ -314,7 +314,7 @@ app.post('/tarefas', authMiddleware, async (req, res) => {
 
         if (req.session.usuario.nivel === 'COLABORADOR') {
             payload.responsaveis = [{ id: req.session.usuario.id }];
-            payload.time = req.session.usuario.time ? { id: req.session.usuario.time.id } : null;
+            payload.time = null; // Garante que não conflite com a regra de atribuição única do back
         } else {
             if (Array.isArray(responsavelId)) {
                 payload.responsaveis = responsavelId.map(id => ({ id: parseInt(id) }));
