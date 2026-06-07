@@ -58,8 +58,13 @@ public class GoogleSheetsService {
             valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             
             for (Tarefa t : tarefas) {
-                String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
-                String responsaveisLabel = !respNomes.isEmpty() ? respNomes : (t.getTime() != null ? "Time: " + t.getTime().getNome() : "-");
+                String responsaveisLabel;
+                if (t.getTime() != null) {
+                    responsaveisLabel = "Time: " + t.getTime().getNome();
+                } else {
+                    String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
+                    responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
+                }
                 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 String feedbacks = t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | "));
@@ -144,8 +149,13 @@ public class GoogleSheetsService {
             valuesLooker.add(Arrays.asList("Título", "Responsável(is)", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Prazo", "Conclusão"));
             
             for (Tarefa t : tarefas) {
-                String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
-                String responsaveisLabel = !respNomes.isEmpty() ? respNomes : (t.getTime() != null ? "Time: " + t.getTime().getNome() : "-");
+                String responsaveisLabel;
+                if (t.getTime() != null) {
+                    responsaveisLabel = "Time: " + t.getTime().getNome();
+                } else {
+                    String respNomes = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
+                    responsaveisLabel = !respNomes.isEmpty() ? respNomes : "-";
+                }
 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 valuesLooker.add(Arrays.asList(

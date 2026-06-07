@@ -1,18 +1,28 @@
 -- ======================================================
--- SCRIPT DE HARD RESET E GERAÇÃO MASSIVA (VERSÃO 4.0 - IDs RESETADOS)
+-- SCRIPT DE HARD RESET E GERAÇÃO MASSIVA (VERSÃO 5.2 - LIMPEZA DE TIMES)
 -- ======================================================
 
 SET SQL_SAFE_UPDATES = 0;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- RESET TOTAL (TRUNCATE reseta o contador de ID para 1)
-TRUNCATE TABLE feedback;
-TRUNCATE TABLE notificacao;
-TRUNCATE TABLE tarefa_responsavel;
-TRUNCATE TABLE tarefa;
-TRUNCATE TABLE usuario;
-TRUNCATE TABLE time;
+-- LIMPEZA COM RESET DE CONTADOR
+DELETE FROM feedback;
+ALTER TABLE feedback AUTO_INCREMENT = 1;
+
+DELETE FROM notificacao;
+ALTER TABLE notificacao AUTO_INCREMENT = 1;
+
+DELETE FROM tarefa_responsavel;
+
+DELETE FROM tarefa;
+ALTER TABLE tarefa AUTO_INCREMENT = 1;
+
+DELETE FROM usuario;
+ALTER TABLE usuario AUTO_INCREMENT = 1;
+
+DELETE FROM time;
+ALTER TABLE time AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -21,9 +31,9 @@ INSERT INTO time (id, nome) VALUES
 (1, 'Recrutamento e Seleção'), (2, 'Departamento Pessoal'), 
 (3, 'Treinamento e Desenvolvimento'), (4, 'Benefícios');
 
--- GESTOR PRINCIPAL (ID será 1)
+-- GESTOR PRINCIPAL
 INSERT INTO usuario (id, nome, email, senha, nivel, loja, foto_url, ativo, data_criacao, codigo_funcionario) VALUES 
-(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$a4PrVfZ13kaB8atN//DOPOFhhPOu9oEWqtgBU8/ezKiKtITj95lfi', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
+(1, 'Gestor Admin', 'gestor@potiguar.com.br', '$2a$10$ASNlqGeOrDWi1lnPU7R9X.pyPgghZEpG5.IQUuIS8m0iiXi5BPc1O', 'GESTOR', 'Matriz', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Gestor', 1, '2024-01-01 08:00:00', '001');
 
 -- 2. PROCEDURE COLABORADORES
 DROP PROCEDURE IF EXISTS GerarColaboradoresMassivo;
@@ -47,7 +57,7 @@ BEGIN
         VALUES (
             CONCAT('Colaborador ', i+2),
             CONCAT('user', i+2, '@potiguar.com.br'),
-            '$2a$10$6e5jq348SirFXZR9779U6.LbW5jvJlAm2bXv5CJaRZIepHqS3eSTu', -- Senha: 123456
+            '$2a$10$uoVcuvWiFrckAJcJF1HDC.HhEOsjA1fFB.eVEaeAUeP2XS141lZtW', -- Senha: 123456
             'COLABORADOR',
             r_loja,
             r_time,
@@ -62,7 +72,7 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 3. PROCEDURE TAREFAS (COM ATRIBUIÇÃO COMPLEXA)
+-- 3. PROCEDURE TAREFAS
 DROP PROCEDURE IF EXISTS GerarTarefasMassivo;
 DELIMITER $$
 CREATE PROCEDURE GerarTarefasMassivo(IN qtd INT)
@@ -98,9 +108,12 @@ BEGIN
         SET r_assignment_type = ELT(FLOOR(1 + (RAND() * 3)), 1, 2, 3);
         SET r_time_id = NULL;
         IF r_assignment_type = 3 THEN
+            -- Atribuição por Time: Não preenchemos tarefa_responsavel, apenas time_id
             SET r_time_id = FLOOR(1 + (RAND() * 4));
+            -- Executor de fato (sorteado entre membros do time)
             SET r_colab_id = (SELECT id FROM usuario WHERE time_id = r_time_id AND nivel = 'COLABORADOR' ORDER BY RAND() LIMIT 1);
         ELSE
+            -- Atribuição Individual ou Múltipla
             SET r_colab_id = (SELECT id FROM usuario WHERE nivel = 'COLABORADOR' ORDER BY RAND() LIMIT 1);
             IF r_assignment_type = 2 THEN
                 SET r_colab2_id = (SELECT id FROM usuario WHERE nivel = 'COLABORADOR' AND id <> r_colab_id ORDER BY RAND() LIMIT 1);
@@ -120,10 +133,8 @@ BEGIN
         
         SET t_id = LAST_INSERT_ID();
 
-        IF r_assignment_type = 3 THEN
-            INSERT INTO tarefa_responsavel (tarefa_id, usuario_id)
-            SELECT t_id, id FROM usuario WHERE time_id = r_time_id AND nivel = 'COLABORADOR';
-        ELSE
+        IF r_assignment_type <> 3 THEN
+            -- Apenas vincula responsáveis individuais se não for tarefa de time
             INSERT INTO tarefa_responsavel (tarefa_id, usuario_id) VALUES (t_id, r_colab_id);
             IF r_assignment_type = 2 AND r_colab2_id IS NOT NULL THEN
                 INSERT INTO tarefa_responsavel (tarefa_id, usuario_id) VALUES (t_id, r_colab2_id);
@@ -140,12 +151,9 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 4. EXECUÇÃO DA CARGA (IDs voltarão ao 1 devido ao TRUNCATE)
+-- 4. EXECUÇÃO
 CALL GerarColaboradoresMassivo(30);
 CALL GerarTarefasMassivo(5000);
-
-DROP PROCEDURE IF EXISTS GerarColaboradoresMassivo;
-DROP PROCEDURE IF EXISTS GerarTarefasMassivo;
 
 SET SQL_SAFE_UPDATES = 1;
 COMMIT;
