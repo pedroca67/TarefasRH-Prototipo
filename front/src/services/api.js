@@ -28,6 +28,7 @@ module.exports = {
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),
     getFeedbacks: (id) => api.get(`/tarefas/${id}/feedbacks`),
+    getCalendario: (responsavelId, timeId, start, end) => api.get('/tarefas/calendario', { params: { responsavelId, timeId, start, end } }),
     
     // Notificações
     getUnreadNotificationsCount: (usuarioId) => api.get('/notificacoes/unread-count', { params: { usuarioId } }),

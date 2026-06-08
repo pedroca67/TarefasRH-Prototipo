@@ -87,6 +87,17 @@ app.get('/api/internal/notificacoes', authMiddleware, asyncHandler(async (req, r
     res.json(response.data);
 }));
 
+app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
+    const { responsavelId, timeId, start, end } = req.query;
+    try {
+        const response = await apiService.getCalendario(responsavelId, timeId, start, end);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erro ao buscar dados do calendário:', error);
+        res.status(500).json({ error: 'Erro ao buscar tarefas' });
+    }
+}));
+
 // Rotas
 app.get('/', (req, res) => {
     if (req.session.usuario) {
