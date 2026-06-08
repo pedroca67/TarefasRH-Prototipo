@@ -59,16 +59,16 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     long countPendentesNaoAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) " +
-            "AND (CAST(t.dataPrazo AS LocalDateTime) <= :end)")
-    long countAtrasadas(java.time.LocalDateTime end);
+            "AND ((t.dataCriacao >= :start AND t.dataCriacao <= :end) OR (CAST(t.dataPrazo AS LocalDateTime) >= :start AND CAST(t.dataPrazo AS LocalDateTime) <= :end))")
+    long countAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tarefa t WHERE t.previstoNoCargoGestor = :previsto " +
             "AND ((t.dataCriacao >= :start AND t.dataCriacao <= :end) OR (CAST(t.dataPrazo AS LocalDateTime) >= :start AND CAST(t.dataPrazo AS LocalDateTime) <= :end))")
     long countByAderenciaGestor(@org.springframework.data.repository.query.Param("previsto") boolean previsto, java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Tarefa t WHERE (t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) " +
-            "AND (CAST(t.dataPrazo AS LocalDateTime) <= :end) ORDER BY t.dataPrazo ASC")
-    List<Tarefa> findTopAtrasadas(java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
+            "AND ((t.dataCriacao >= :start AND t.dataCriacao <= :end) OR (CAST(t.dataPrazo AS LocalDateTime) >= :start AND CAST(t.dataPrazo AS LocalDateTime) <= :end)) ORDER BY t.dataPrazo ASC")
+    List<Tarefa> findTopAtrasadas(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN FETCH t.time LEFT JOIN FETCH t.criadoPor LEFT JOIN FETCH t.concluidoPor")
     List<Tarefa> findTarefasForExport();
