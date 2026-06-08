@@ -1,12 +1,12 @@
 # Atividade 5: Estruturação dos Elementos Finais da Proposta
 **Grupo:** 05  
-**Projeto:** TarefasRH Potiguar (Automação e Inteligência Administrativa)  
-**Empresa Focal:** Potiguar Home Center SA  
+**Projeto:** TarefasRH Potiguar (Inteligência e Automação Administrativa)  
+**Solicitante (Empresa):** RH Potiguar Home Center SA  
 
 ---
 
 ### Elemento 1: O que faz
-**Automatiza** a coleta de dados operacionais do RH através de um ambiente virtual e **gera** tabulações inteligentes em tempo real, eliminando o preenchimento manual de planilhas e auditando desvios de função que causam as 60h extras do setor.
+**Automatiza** a tabulação de atividades administrativas e **metrifica** a aderência ao cargo através de uma interface integrada, transformando o fluxo de trabalho manual em dashboards estratégicos para a eliminação das 60 horas extras do setor.
 
 ---
 
@@ -14,26 +14,26 @@
 
 | Dado | De onde vem | Quem registra | Frequência | Crítico? |
 | :--- | :--- | :--- | :--- | :--- |
-| **Complexidade Subjetiva** | Sistema TarefasRH | Gestor ou Colaborador | A cada tarefa | **Sim** |
-| **Aderência ao Cargo** | Descrição do cargo atual | Gestor (Solicitante) | No registro | **Sim** |
-| **Auto-auditoria de Função** | Percepção técnica do executor | Colaborador (Executor) | Na conclusão | **Sim** |
-| **Volume de Esforço (pts)** | Algoritmo de conversão | Automático (Sistema) | No registro | **Sim** |
-| **Horas de Capacidade** | Cadastro de Admissão | Automático (Sistema) | Mensal | **Sim** |
+| **Escopo de Complexidade** | Percepção de esforço (B/M/A) | Executor (Colab/Gestor) | A cada tarefa | **Sim** |
+| **Aderência Contratual** | Descrição de cargo oficial | Criador da tarefa | No registro | **Sim** |
+| **Aderência Operacional** | Auto-auditoria do executor | Colaborador | Na conclusão | **Sim** |
+| **Carimbo de Produtividade** | Logs de tempo do sistema | Automático (Sistema) | Por tarefa | **Sim** |
+| **Capacidade Operativa** | Dados de Admissão/Turnover | Administrador | Mensal | **Sim** |
 
 ---
 
 ### Elemento 3: Como funciona
 
-*   **Passo 1 (Coleta Descentralizada):** O sistema substitui o registro manual por um ambiente em nuvem onde Gestores e Colaboradores registram demandas, complexidade e aderência ao cargo em segundos.
-*   **Passo 2 (Sincronização Ativa):** O "motor" da aplicação processa as interações e alimenta automaticamente uma base de dados no Google Sheets, garantindo integridade e eliminando o erro humano de digitação.
-*   **Passo 3 (Análise de GAP):** O sistema cruza os dados de entrega com a descrição do cargo (auto-auditoria), gerando instantaneamente o indicador de desvio de função.
-*   **Passo 4 (Visualização Gerencial):** Os dados tabulados são espelhados em um Dashboard no Looker Studio, permitindo que a Marianna acompanhe o desempenho semanal/mensal de forma visual e tome decisões rápidas.
+*   **Passo 1 (Input Inteligente):** O sistema substitui o preenchimento manual de planilhas por uma interface ágil onde o Gestor e o Colaborador registram suas demandas diárias, definindo a complexidade e o alinhamento ao cargo.
+*   **Passo 2 (Sincronização Ativa):** O motor Java processa os dados brutos e os converte em "Pontos de Impacto", alimentando automaticamente uma base centralizada no Google Sheets sem intervenção manual.
+*   **Passo 3 (Auditoria de Cargos):** O sistema cruza a visão de quem pediu a tarefa com a visão de quem a executou, gerando o indicador de desvio de função solicitado pela empresa.
+*   **Passo 4 (Visualização Estratégica):** Os dados são espelhados em Dashboards no Looker Studio, permitindo que a empresa identifique semanalmente quais atividades precisam ser automatizadas ou redistribuídas para zerar as horas extras.
 
 ---
 
 ### Elemento 4: Resultado esperado
 
-**Reduzir** em **25%** o volume de horas extras do setor administrativo (de 60h para 45h mensais) nos primeiros **90 dias**, através da automação do fluxo de dados e da correção estratégica dos desvios de função identificados pela ferramenta.
+**Reduzir** em **25%** o volume de horas extras (de 60h para 45h mensais) no prazo de **90 dias**, fornecendo à diretoria os dados exatos para a atualização das descrições de cargo e otimização dos processos manuais identificados.
 
 ---
-**Diferencial Grupo 5:** A proposta evoluiu de uma simples planilha para um **Ecossistema de Automação**, garantindo que o dado chegue ao dashboard de forma limpa, frequente e sem dependência de preenchimentos manuais retroativos.
+**Evolução da Proposta:** O projeto nasceu da necessidade de uma planilha de acompanhamento e evoluiu para um **Ecossistema de Automação**, garantindo que as informações macros solicitadas pela cliente sejam geradas com integridade, agilidade e visão de longo prazo.
