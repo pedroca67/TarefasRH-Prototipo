@@ -73,7 +73,7 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     List<Usuario> findUsuariosForExport();
 
     @org.springframework.data.jpa.repository.Query("SELECT " +
-            "CONCAT(YEAR(t.dataConclusao), '-', CASE WHEN MONTH(t.dataConclusao) < 10 THEN '0' ELSE '' END, MONTH(t.dataConclusao)) as mes, " +
+            "YEAR(t.dataConclusao), MONTH(t.dataConclusao), " +
             "SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) * 3.0 " +
             "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao IS NOT NULL " +
             "GROUP BY YEAR(t.dataConclusao), MONTH(t.dataConclusao)")

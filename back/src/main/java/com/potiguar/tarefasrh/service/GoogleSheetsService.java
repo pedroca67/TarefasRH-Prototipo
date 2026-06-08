@@ -124,7 +124,10 @@ public class GoogleSheetsService {
             
             // Busca somas mensais direto do SQL para evitar carregar milhares de tarefas
             Map<String, Double> horasPorMes = tarefaRepository.findMonthlyEffortData().stream()
-                    .collect(Collectors.toMap(row -> row[0].toString(), row -> (Double)row[1]));
+                    .collect(Collectors.toMap(
+                            row -> row[0].toString() + "-" + String.format("%02d", ((Number)row[1]).intValue()), 
+                            row -> ((Number)row[2]).doubleValue()
+                    ));
 
             // Adicionar os últimos 12 meses ao resumo
             java.time.YearMonth currentMonth = java.time.YearMonth.now();

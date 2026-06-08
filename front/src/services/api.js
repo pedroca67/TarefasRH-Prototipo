@@ -36,5 +36,8 @@ module.exports = {
     marcarNotificacoesComoLidas: (taskId, usuarioId) => api.patch(`/notificacoes/read-by-task/${taskId}`, null, { params: { usuarioId } }),
     
     getStats: (startDate, endDate, analyticalMode = false) => 
-        api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } })
+        api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } }),
+
+    // Admin Tools
+    triggerSync: () => api.post('/tarefas/sync-sheets')
 };
