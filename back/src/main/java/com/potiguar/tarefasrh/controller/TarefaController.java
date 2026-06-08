@@ -236,18 +236,11 @@ public class TarefaController {
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
         
-        LocalDateTime startDateTime = start.atStartOfDay();
-        LocalDateTime endDateTime = end.atTime(23, 59, 59);
-
-        // Reusing findComFiltros but bypassing pagination overhead by using a large size.
-        // For a true optimized endpoint we'd create a specific projection query, but this suffices for the prototype while maintaining filter logic.
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 1000);
-        org.springframework.data.domain.Page<Tarefa> tarefas = tarefaRepository.findComFiltros(
-                responsavelId, timeId, null, null, null, null, startDateTime, endDateTime, pageable);
+        List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
 
         LocalDate hoje = LocalDate.now();
 
-        return tarefas.getContent().stream().map(t -> {
+        return tarefas.stream().map(t -> {
             Map<String, Object> event = new HashMap<>();
             event.put("id", t.getId());
             event.put("title", t.getTitulo());
