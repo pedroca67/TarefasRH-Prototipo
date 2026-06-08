@@ -1,12 +1,12 @@
 # Atividade 5: Estruturação dos Elementos Finais da Proposta
 **Grupo:** 05  
-**Projeto:** TarefasRH Potiguar (Inteligência Administrativa)  
+**Projeto:** TarefasRH Potiguar (Automação e Inteligência Administrativa)  
 **Empresa Focal:** Potiguar Home Center SA  
 
 ---
 
 ### Elemento 1: O que faz
-**Tabula** as atividades administrativas em tempo real e **audita** a aderência ao cargo de forma compartilhada (Gestor/Colaborador), visando atualizar descrições obsoletas e eliminar as 60 horas extras mensais do setor.
+**Automatiza** a coleta de dados operacionais do RH através de um ambiente virtual e **gera** tabulações inteligentes em tempo real, eliminando o preenchimento manual de planilhas e auditando desvios de função que causam as 60h extras do setor.
 
 ---
 
@@ -14,26 +14,26 @@
 
 | Dado | De onde vem | Quem registra | Frequência | Crítico? |
 | :--- | :--- | :--- | :--- | :--- |
-| **Complexidade Subjetiva** | App TarefasRH | Gestor ou Colaborador | A cada tarefa | **Sim** |
+| **Complexidade Subjetiva** | Sistema TarefasRH | Gestor ou Colaborador | A cada tarefa | **Sim** |
 | **Aderência ao Cargo** | Descrição do cargo atual | Gestor (Solicitante) | No registro | **Sim** |
 | **Auto-auditoria de Função** | Percepção técnica do executor | Colaborador (Executor) | Na conclusão | **Sim** |
-| **Volume de Esforço (pts)** | Motor de conversão (1, 3, 5) | Automático (Sistema) | No registro | **Sim** |
-| **Tempo de Resposta** | Logs de criação e entrega | Automático (Sistema) | Por tarefa | **Sim** |
+| **Volume de Esforço (pts)** | Algoritmo de conversão | Automático (Sistema) | No registro | **Sim** |
+| **Horas de Capacidade** | Cadastro de Admissão | Automático (Sistema) | Mensal | **Sim** |
 
 ---
 
 ### Elemento 3: Como funciona
 
-*   **Passo 1 (Registro Integrado):** O Gestor e o Colaborador alimentam continuamente o ambiente virtual com as demandas do dia, definindo a complexidade e a expectativa de cargo para cada tarefa.
-*   **Passo 2 (Auto-auditoria):** Ao concluir uma tarefa, o colaborador valida se aquela atividade pertence ao seu escopo oficial, gerando o dado necessário para identificar descrições de cargo desatualizadas.
-*   **Passo 3 (Tabulação Macro):** O sistema processa os dados e sincroniza automaticamente com o Google Sheets, eliminando o preenchimento manual e garantindo a atualização em tempo real para a diretoria.
-*   **Passo 4 (Visualização Semanal/Mensal):** Através de Dashboards no Looker Studio, o Gestor visualiza os percentuais de esforço e identifica rapidamente quais atividades "extra-cargo" estão gerando o banco de horas extras.
+*   **Passo 1 (Coleta Descentralizada):** O sistema substitui o registro manual por um ambiente em nuvem onde Gestores e Colaboradores registram demandas, complexidade e aderência ao cargo em segundos.
+*   **Passo 2 (Sincronização Ativa):** O "motor" da aplicação processa as interações e alimenta automaticamente uma base de dados no Google Sheets, garantindo integridade e eliminando o erro humano de digitação.
+*   **Passo 3 (Análise de GAP):** O sistema cruza os dados de entrega com a descrição do cargo (auto-auditoria), gerando instantaneamente o indicador de desvio de função.
+*   **Passo 4 (Visualização Gerencial):** Os dados tabulados são espelhados em um Dashboard no Looker Studio, permitindo que a Marianna acompanhe o desempenho semanal/mensal de forma visual e tome decisões rápidas.
 
 ---
 
 ### Elemento 4: Resultado esperado
 
-**Reduzir** o volume de horas extras do setor administrativo de **60h para 45h mensais** (redução de 25%) nos primeiros **90 dias** de uso, fornecendo dados concretos para a atualização das descrições de cargo e automação de processos manuais.
+**Reduzir** em **25%** o volume de horas extras do setor administrativo (de 60h para 45h mensais) nos primeiros **90 dias**, através da automação do fluxo de dados e da correção estratégica dos desvios de função identificados pela ferramenta.
 
 ---
-**Nota:** Documento desenvolvido para a Atividade 5 da Fundação Digital, alinhado ao MVP funcional (Java/Node.js) e à necessidade estratégica da Potiguar Home Center SA.
+**Diferencial Grupo 5:** A proposta evoluiu de uma simples planilha para um **Ecossistema de Automação**, garantindo que o dado chegue ao dashboard de forma limpa, frequente e sem dependência de preenchimentos manuais retroativos.
