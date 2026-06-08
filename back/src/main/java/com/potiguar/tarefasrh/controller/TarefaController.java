@@ -274,7 +274,7 @@ public class TarefaController {
         Map<String, Object> stats = new HashMap<>();
         long pendentes = tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime);
         long concluidas = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, startDateTime, endDateTime);
-        long atrasadas = tarefaRepository.countAtrasadas(startDateTime, endDateTime);
+        long atrasadas = tarefaRepository.countAtrasadas(endDateTime);
         long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, startDateTime, endDateTime);
 
         stats.put("pendente", pendentes);
@@ -289,7 +289,7 @@ public class TarefaController {
         stats.put("total_times", timeRepository.count());
 
         // --- Top Atrasadas para o Dashboard ---
-        stats.put("topAtrasadas", tarefaRepository.findTopAtrasadas(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5)));
+        stats.put("topAtrasadas", tarefaRepository.findTopAtrasadas(endDateTime, org.springframework.data.domain.PageRequest.of(0, 5)));
 
         // --- Ranking Otimizado ---
         List<Object[]> rankingRaw = tarefaRepository.findRankingData(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5));
