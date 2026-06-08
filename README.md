@@ -1,57 +1,44 @@
-# TarefasRH Potiguar - Protótipo Funcional (Grupo 5)
+# TarefasRH Potiguar - Protótipo Funcional 
 
-Este projeto é um protótipo funcional desenvolvido para o setor de RH da **Potiguar Home Center SA**, com o objetivo de solucionar a falta de métricas de produtividade e alinhar as responsabilidades dos colaboradores.
-
----
-
-## 📋 Contexto do Desafio
-A Potiguar enfrenta dificuldades em acompanhar a produtividade individual e coletiva do RH. Descrições de cargo desatualizadas geram confusão de responsabilidades, resultando em cerca de **60h extras mensais**, retrabalho e processos manuais.
-
-**Statement de Dor:**
-> *"Os gestores do setor de RH enfrentam a falta de dados sobre a produtividade diária dos funcionários, gerando a ausência de métricas para as avaliações periódicas da eficiência e do rendimento dos funcionários e das equipes."*
+Este projeto é um protótipo funcional de alta performance desenvolvido para o setor de RH da **Potiguar Home Center SA**, com o objetivo de centralizar demandas, mapear produtividade real e evidenciar gargalos de desvio de função.
 
 ---
 
-## ✅ O Que o Sistema Já Entrega
-- **Registro de Tarefas:** Cadastro completo com status, complexidade (pontuada), categoria e prazo.
-- **Atribuição Flexível:** Atribuição individual ou para times inteiros.
-- **Dashboard Gerencial em Tempo Real:** 
-    - Indicadores de produtividade e esforço concluído.
-    - Métrica de **Aderência ao Cargo** (Expectativa do Gestor vs Realidade do Colaborador).
-    - **Ranking de Top Performers:** Visualização mensal da produtividade por funcionário baseado em pontos de impacto.
-    - Carga Horária Estimada dinâmica baseada na equipe ativa.
-- **Sistema de Múltiplos Feedbacks:** Histórico completo de orientações do gestor em cada tarefa, com fuso horário local (São Luís/Nordeste).
-- **Notificações Inteligentes:** Sino no header com alertas de novos feedbacks e mudanças de status.
-- **Integração de Dados:** Exportação automática para **Google Sheets** e pronto para consumo no **Looker Studio**.
-- **Acompanhamento Remoto:** Gestão total das atividades à distância com envio de evidências de conclusão.
-- **Memória de Navegação:** Persistência de filtros, abas e posição de rolagem para uma experiência fluida.
+## 📋 O Desafio
+A Potiguar enfrenta dificuldades em acompanhar a produtividade do RH. Descrições de cargo desatualizadas geram sobrecarga e falta de visibilidade sobre o "Estoque de Trabalho", resultando em excesso de horas extras e processos manuais.
 
 ---
 
-## ⏳ O Que Ainda Falta
-- **Indicador de Rotatividade (Turnover):** Módulo para monitorar a entrada e saída de funcionários do setor.
-- **Relatório Individual de Impacto:** Geração de PDF detalhando o desempenho histórico de um colaborador específico.
-- **Gamificação Avançada:** Sistema de conquistas e badges além do ranking de pontos.
+## ✅ Funcionalidades Entregues
+- **Gestão de Demanda & Estoque de Trabalho:** Controle de tarefas com foco no acompanhamento da "Dívida Ativa" (tarefas atrasadas e pendentes).
+- **Dashboard Executivo:** Indicadores em tempo real de Produtividade, Carga Horária (Capacidade vs. Entrega) e o exclusivo medidor de **Aderência ao Cargo**.
+- **Painel do Colaborador & Gamificação:** Workspace individual focado em organizar a rotina ("Atenção Prioritária") e incentivar entregas via medalhas de impacto (Bronze, Prata, Ouro).
+- **Calendário Interativo:** Visão mensal e semanal colorida para gestão visual de prazos.
+- **Sistema de Múltiplos Feedbacks:** Histórico completo de orientações do gestor com notificações em tempo real.
+- **Integração Data Studio (Looker):** Sincronização em segundo plano com o Google Sheets, alimentando painéis de Business Intelligence (BI) de forma invisível.
+- **Alta Performance & UX:** Banco de dados otimizado contra vazamentos de memória (OOM), paginação inteligente e restauração global de navegação (Scroll Memory).
 
 ---
 
-## 🛠️ Estrutura Técnica
-- **Backend:** Java 21, Spring Boot, Spring Security, JPA/Hibernate, MySQL.
-- **Frontend:** Node.js, Express, EJS, Bootstrap 5, Chart.js.
-- **Fuso Horário:** Configurado para `America/Fortaleza` (Horário de São Luís).
+## 🛠️ Tecnologias Utilizadas
+- **Backend:** Java 21, Spring Boot 3.2, Hibernate 6, MySQL 8.0 (Deploy otimizado).
+- **Frontend:** Node.js, Express, EJS, Bootstrap 5, FullCalendar, Chart.js.
+- **Integração:** Google Sheets API.
+- **Fuso Horário:** `America/Fortaleza` (Horário de São Luís).
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como Executar Localmente
 
 ### 1. Requisitos
 - Java 21+
 - Node.js 18+
-- MySQL 8.0 (porta 3306)
 
-### 2. Execução Rápida (Windows)
-Basta executar o arquivo `iniciar.bat` na raiz do projeto. Ele abrirá automaticamente as janelas do Backend e Frontend.
+### 2. Passo a Passo
+1. Inicie o Backend em Java (porta `8080`).
+2. Acesse a pasta `front` e execute `npm run dev`.
+3. Acesse `http://localhost:3000` no navegador.
 
-### 3. Credenciais de Teste
-- **Gestor:** `gestor@potiguar.com.br` / `admin123`
-- **Colaborador:** `colaborador@potiguar.com.br` / `user123`
+### 3. Ferramentas Administrativas
+- **Acesso:** Use os e-mails/matrículas cadastradas no banco de dados.
+- **Sincronização Manual (Admin):** Para forçar a carga de dados para o BI sem interferir na interface, acesse a rota oculta `/admin/forcar-sync` estando logado no sistema.
