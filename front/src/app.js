@@ -245,6 +245,10 @@ app.get('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
     });
 }));
 
+app.get('/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
+    res.render('tarefas/calendario', { currentPage: 'calendario' });
+}));
+
 app.get('/tarefas/nova', authMiddleware, asyncHandler(async (req, res) => {
     if (req.session.usuario.nivel === 'GESTOR') {
         const usuarios = (await apiService.getUsuarios()).data;

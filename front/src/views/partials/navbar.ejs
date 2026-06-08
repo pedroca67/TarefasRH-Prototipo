@@ -39,6 +39,9 @@
     <a href="/dashboard" class="nav-link-custom <%= currentPage === 'dashboard' ? 'active' : '' %>">
       <i class="bi bi-grid-1x2"></i> <span><%= usuario.nivel === 'GESTOR' ? 'Dashboard' : 'Meu Workspace' %></span>
     </a>
+    <a href="/tarefas/calendario" class="nav-link-custom <%= currentPage === 'calendario' ? 'active' : '' %>">
+      <i class="bi bi-calendar-event"></i> <span>Meu Calendário</span>
+    </a>
     
     <% if (usuario.nivel === 'GESTOR') { %>
       <a href="/tarefas" class="nav-link-custom <%= currentPage === 'tarefas' ? 'active' : '' %> position-relative">

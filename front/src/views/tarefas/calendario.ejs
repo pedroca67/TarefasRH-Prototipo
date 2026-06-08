@@ -1,0 +1,102 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<!-- FullCalendar CSS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event me-2"></i> Meu Calendário</h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div id='calendar'></div>
+        </div>
+    </div>
+</div>
+
+<!-- FullCalendar JS -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js'></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                list: 'Lista'
+            },
+            events: function(fetchInfo, successCallback, failureCallback) {
+                // Fetch events from our new endpoint
+                const start = fetchInfo.startStr.split('T')[0];
+                const end = fetchInfo.endStr.split('T')[0];
+                
+                // Assuming we want to filter by the logged-in user if it's a collaborator
+                const userId = '<%= usuario.id %>';
+                const userNivel = '<%= usuario.nivel %>';
+                
+                let url = `/api/tarefas/calendario?start=${start}&end=${end}`;
+                if (userNivel === 'COLABORADOR') {
+                    url += `&responsavelId=${userId}`;
+                }
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        const events = data.map(task => {
+                            let color = '#0d6efd'; // Default blue
+                            
+                            switch(task.status) {
+                                case 'ATRASADA':
+                                    color = '#dc3545'; // Red
+                                    break;
+                                case 'PENDENTE':
+                                    color = '#fd7e14'; // Orange
+                                    break;
+                                case 'EM_ANDAMENTO':
+                                    color = '#0d6efd'; // Blue
+                                    break;
+                                case 'CONCLUIDA':
+                                    color = '#198754'; // Green
+                                    break;
+                            }
+
+                            return {
+                                id: task.id,
+                                title: task.title,
+                                start: task.start,
+                                backgroundColor: color,
+                                borderColor: color,
+                                url: `/tarefas/${task.id}`
+                            };
+                        });
+                        successCallback(events);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching tasks:', error);
+                        failureCallback(error);
+                    });
+            },
+            eventClick: function(info) {
+                // Prevent browser from navigating to the URL immediately if we want to handle it (though we just use the url property)
+                // info.jsEvent.preventDefault();
+            }
+        });
+
+        calendar.render();
+    });
+</script>
+
+<%- include('../partials/footer') %>

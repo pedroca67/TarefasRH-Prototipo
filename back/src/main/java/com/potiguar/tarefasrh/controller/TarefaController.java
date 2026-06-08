@@ -229,6 +229,40 @@ public class TarefaController {
         return feedbackRepository.findByTarefaOrderByDataCriacaoDesc(t);
     }
 
+    @GetMapping("/calendario")
+    public List<Map<String, Object>> getCalendario(
+            @RequestParam(required = false) Long responsavelId,
+            @RequestParam(required = false) Long timeId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
+        
+        LocalDateTime startDateTime = start.atStartOfDay();
+        LocalDateTime endDateTime = end.atTime(23, 59, 59);
+
+        // Reusing findComFiltros but bypassing pagination overhead by using a large size.
+        // For a true optimized endpoint we'd create a specific projection query, but this suffices for the prototype while maintaining filter logic.
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 1000);
+        org.springframework.data.domain.Page<Tarefa> tarefas = tarefaRepository.findComFiltros(
+                responsavelId, timeId, null, null, null, null, startDateTime, endDateTime, pageable);
+
+        LocalDate hoje = LocalDate.now();
+
+        return tarefas.getContent().stream().map(t -> {
+            Map<String, Object> event = new HashMap<>();
+            event.put("id", t.getId());
+            event.put("title", t.getTitulo());
+            event.put("start", t.getDataPrazo().toString());
+            
+            Status currentStatus = t.getStatus();
+            if (currentStatus != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje)) {
+                currentStatus = Status.ATRASADA;
+            }
+            
+            event.put("status", currentStatus.toString());
+            return event;
+        }).collect(Collectors.toList());
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
