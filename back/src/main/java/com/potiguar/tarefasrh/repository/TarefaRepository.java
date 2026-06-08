@@ -89,9 +89,9 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
             "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao >= :start AND t.dataConclusao <= :end")
     long sumEsforcoConcluido(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
-    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN t.responsaveis r WHERE " +
-            "(:responsavelId IS NULL OR r.id = :responsavelId) AND " +
-            "(:timeId IS NULL OR t.time.id = :timeId) AND " +
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN t.time time WHERE " +
+            "(:responsavelId IS NULL OR EXISTS (SELECT 1 FROM t.responsaveis r WHERE r.id = :responsavelId)) AND " +
+            "(:timeId IS NULL OR time.id = :timeId) AND " +
             "(t.dataPrazo >= :start AND t.dataPrazo <= :end)")
     List<Tarefa> findForCalendario(@org.springframework.data.repository.query.Param("responsavelId") Long responsavelId, @org.springframework.data.repository.query.Param("timeId") Long timeId, @org.springframework.data.repository.query.Param("start") java.time.LocalDate start, @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
 }
