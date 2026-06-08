@@ -13,8 +13,8 @@
 ### Elemento 2: Quais dados usa
 
 | Dado | De onde vem | Quem registra | Frequência | Crítico? |
-| :--- | :--- | :--- | :--- | :--- |
-| **Nível de Esforço (1, 3, 5 pts)** | Escala de complexidade definida no sistema | Gestor/Solicitante | A cada nova tarefa | **Sim** |
+| :--- | :--- | :--- | :--- | : :--- |
+| **Complexidade da Atividade** | Percepção de esforço (Baixa, Média, Alta) | Gestor/Solicitante | A cada nova tarefa | **Sim** |
 | **Aderência Teórica** | Descrição de cargo oficial da empresa | Gestor/Solicitante | A cada nova tarefa | **Sim** |
 | **Aderência Prática** | Percepção técnica do executor | Colaborador | No ato da conclusão | **Sim** |
 | **Horário de Interação** | Logs de sistema (Data Criação/Conclusão) | Automático (Sistema) | Em cada evento | **Sim** |
@@ -24,10 +24,10 @@
 
 ### Elemento 3: Como funciona
 
-*   **Passo 1:** O Gestor registra a demanda no sistema definindo o peso de esforço (1, 3 ou 5) e sinalizando se a tarefa é prevista no cargo do colaborador.
+*   **Passo 1:** O Gestor registra a demanda no sistema definindo o nível de complexidade subjetiva (Baixa, Média ou Alta) e sinalizando se a atividade é prevista no cargo oficial do colaborador.
 *   **Passo 2:** O Colaborador executa a atividade e, ao finalizar, registra sua percepção individual sobre a aderência daquela tarefa às suas funções contratuais.
-*   **Passo 3:** O sistema processa os dados e exporta as métricas estruturadas para uma camada de Business Intelligence (Looker Studio).
-*   **Passo 4:** O Gestor utiliza o dashboard para isolar as atividades "Extra-Cargo" de alto esforço e readequar o fluxo de trabalho, eliminando a sobrecarga de horas.
+*   **Passo 3:** O sistema converte os rótulos de complexidade em pesos de impacto numérico e exporta os dados consolidados para o Looker Studio.
+*   **Passo 4:** O Gestor utiliza o dashboard para isolar os maiores "ladrões de tempo" (tarefas extra-cargo de alta complexidade) e readequar o quadro de pessoal.
 
 ---
 
