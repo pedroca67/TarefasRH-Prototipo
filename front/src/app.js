@@ -282,6 +282,26 @@ app.get('/tarefas/nova', authMiddleware, asyncHandler(async (req, res) => {
     }
 }));
 
+app.get('/tarefas/:id/editar', authMiddleware, asyncHandler(async (req, res) => {
+    const response = await apiService.getTarefa(req.params.id, req.session.usuario.id);
+    const tarefa = response.data;
+    
+    const isGestor = req.session.usuario.nivel === 'GESTOR';
+    const isCriador = tarefa.criadoPor && tarefa.criadoPor.id === req.session.usuario.id;
+
+    if (!isGestor && !isCriador) {
+        return res.status(403).render('errors/403', { message: 'Você não tem permissão para editar esta tarefa.', redirectUrl: `/tarefas/${req.params.id}` });
+    }
+
+    if (isGestor) {
+        const usuarios = (await apiService.getUsuarios()).data;
+        const times = (await apiService.getTimes()).data;
+        res.render('tarefas/form', { tarefa, usuarios, times, currentPage: 'tarefas' });
+    } else {
+        res.render('tarefas/form_colaborador', { tarefa, currentPage: 'dashboard' });
+    }
+}));
+
 app.post('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
     const { titulo, descricao, complexidade, dataPrazo, responsavelId, timeId, previstoNoCargoGestor, categoria } = req.body;
     const payload = {
@@ -293,6 +313,7 @@ app.post('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
 
     if (req.session.usuario.nivel === 'COLABORADOR') {
         payload.responsaveis = [{ id: req.session.usuario.id }];
+        payload.time = null;
     } else {
         if (Array.isArray(responsavelId)) {
             payload.responsaveis = responsavelId.map(id => ({ id: parseInt(id) }));
@@ -305,6 +326,31 @@ app.post('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
     await apiService.criarTarefa(payload);
     req.session.success = 'Tarefa criada com sucesso!';
     res.redirect('/dashboard');
+}));
+
+app.post('/tarefas/:id', authMiddleware, asyncHandler(async (req, res) => {
+    const { titulo, descricao, complexidade, dataPrazo, responsavelId, timeId, previstoNoCargoGestor, categoria } = req.body;
+    const payload = {
+        titulo, descricao, complexidade, dataPrazo,
+        previstoNoCargoGestor: previstoNoCargoGestor === 'on' || previstoNoCargoGestor === true || previstoNoCargoGestor === 'true',
+        categoria: categoria || 'OUTROS'
+    };
+
+    if (req.session.usuario.nivel === 'COLABORADOR') {
+        payload.responsaveis = [{ id: req.session.usuario.id }];
+        payload.time = null;
+    } else {
+        if (Array.isArray(responsavelId)) {
+            payload.responsaveis = responsavelId.map(id => ({ id: parseInt(id) }));
+        } else if (responsavelId) {
+            payload.responsaveis = [{ id: parseInt(responsavelId) }];
+        }
+        payload.time = timeId ? { id: parseInt(timeId) } : null;
+    }
+
+    await apiService.atualizarTarefa(req.params.id, payload, req.session.usuario.id);
+    req.session.success = 'Tarefa atualizada com sucesso!';
+    res.redirect(`/tarefas/${req.params.id}`);
 }));
 
 app.get('/tarefas/:id', authMiddleware, asyncHandler(async (req, res) => {

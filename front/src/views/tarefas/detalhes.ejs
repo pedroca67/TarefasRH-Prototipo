@@ -7,14 +7,22 @@
       <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start mb-4">
           <div>
-            <h1 class="h2 fw-bold text-potiguar mb-1">
-                <%= tarefa.titulo %>
-                <% if (tarefa.criadoPor && tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === tarefa.criadoPor.id)) { %>
-                    <span class="badge bg-info text-dark ms-2 small fw-normal" style="font-size: 0.8rem;">
-                        <i class="bi bi-person-check me-1"></i> Auto-atribuída
-                    </span>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1 class="h2 fw-bold text-potiguar mb-0">
+                    <%= tarefa.titulo %>
+                    <% if (tarefa.criadoPor && tarefa.responsaveis && tarefa.responsaveis.some(r => r.id === tarefa.criadoPor.id)) { %>
+                        <span class="badge bg-info text-dark ms-2 small fw-normal" style="font-size: 0.8rem;">
+                            <i class="bi bi-person-check me-1"></i> Auto-atribuída
+                        </span>
+                    <% } %>
+                </h1>
+                
+                <% if (usuario.nivel === 'GESTOR' || (tarefa.criadoPor && tarefa.criadoPor.id === usuario.id)) { %>
+                    <a href="/tarefas/<%= tarefa.id %>/editar" class="btn btn-sm btn-outline-potiguar fw-bold ms-2">
+                        <i class="bi bi-pencil-square me-1"></i> Editar
+                    </a>
                 <% } %>
-            </h1>
+            </div>
             <p class="text-muted small">
               <i class="bi bi-calendar-event me-1"></i>Criada em: <%= new Date(tarefa.dataCriacao).toLocaleString('pt-BR', { timeZone: 'America/Fortaleza' }) %>
               <% if (tarefa.criadoPor) { %>

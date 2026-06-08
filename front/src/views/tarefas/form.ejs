@@ -170,45 +170,46 @@
   <div class="col-12 col-md-8">
     <div class="card shadow-sm border-0">
       <div class="card-header bg-potiguar text-white py-3 border-0" style="border-radius: 12px 12px 0 0;">
-        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-plus-lg me-2"></i>Nova Tarefa</h5>
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-<%= typeof tarefa !== 'undefined' ? 'pencil-square' : 'plus-lg' %> me-2"></i>
+            <%= typeof tarefa !== 'undefined' ? 'Editar' : 'Nova' %> Tarefa
+        </h5>
       </div>
       <div class="card-body p-4">
-        <form action="/tarefas" method="POST" id="taskForm">
+        <form action="/tarefas<%= typeof tarefa !== 'undefined' ? '/' + tarefa.id : '' %>" method="POST" id="taskForm">
           <div class="mb-3">
             <label class="form-label fw-bold">Título</label>
-            <input class="form-control" type="text" name="titulo" placeholder="Ex: Organizar Arquivos do RH" required>
+            <input class="form-control" type="text" name="titulo" value="<%= typeof tarefa !== 'undefined' ? tarefa.titulo : '' %>" placeholder="Ex: Organizar Arquivos do RH" required>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-bold">Descrição</label>
-            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."></textarea>
+            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."><%= typeof tarefa !== 'undefined' ? tarefa.descricao : '' %></textarea>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label fw-bold">Complexidade</label>
               <select class="form-select" name="complexidade">
-                <option value="BAIXA">Baixa</option>
-                <option value="MEDIA">Média</option>
-                <option value="ALTA">Alta</option>
+                <option value="BAIXA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'BAIXA') ? 'selected' : '' %>>Baixa</option>
+                <option value="MEDIA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'MEDIA') ? 'selected' : '' %>>Média</option>
+                <option value="ALTA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'ALTA') ? 'selected' : '' %>>Alta</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-bold">Categoria</label>
               <select class="form-select" name="categoria" required>
-                <option value="RECRUTAMENTO_E_SELECAO">Recrutamento e Seleção</option>
-                <option value="DEPARTAMENTO_PESSOAL">Departamento Pessoal</option>
-                <option value="TREINAMENTO_E_DESENVOLVIMENTO">Treinamento e Desenvolvimento</option>
-                <option value="CARGOS_E_SALARIOS">Cargos e Salários</option>
-                <option value="BENEFICIOS">Benefícios</option>
-                <option value="ENDOMARKETING">Endomarketing</option>
-                <option value="SAUDE_E_SEGURANCA">Saúde e Segurança</option>
-                <option value="OUTROS" selected>Outros</option>
+                <% const cats = ['RECRUTAMENTO_E_SELECAO', 'DEPARTAMENTO_PESSOAL', 'TREINAMENTO_E_DESENVOLVIMENTO', 'CARGOS_E_SALARIOS', 'BENEFICIOS', 'ENDOMARKETING', 'SAUDE_E_SEGURANCA', 'OUTROS']; %>
+                <% cats.forEach(cat => { %>
+                    <option value="<%= cat %>" <%= (typeof tarefa !== 'undefined' && tarefa.categoria === cat) ? 'selected' : (cat === 'OUTROS' ? 'selected' : '') %>>
+                        <%= cat.replace(/_/g, ' ') %>
+                    </option>
+                <% }) %>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-bold">Prazo</label>
-              <input class="form-control" type="date" name="dataPrazo" required>
+              <input class="form-control" type="date" name="dataPrazo" value="<%= typeof tarefa !== 'undefined' ? new Date(tarefa.dataPrazo).toISOString().split('T')[0] : '' %>" required>
             </div>
           </div>
 
@@ -220,8 +221,11 @@
                   <p class="text-muted small mb-0">Esta é a sua expectativa inicial sobre a função do responsável.</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                  <span id="previstoLabelGestor" class="fw-bold text-success" style="min-width: 35px; text-align: right;">Sim</span>
-                  <input class="form-check-input ms-0" type="checkbox" name="previstoNoCargoGestor" id="previstoNoCargoGestor" checked style="width: 3.5em; height: 1.75em; cursor: pointer;">
+                  <% const isPrevisto = typeof tarefa !== 'undefined' ? tarefa.previstoNoCargoGestor : true; %>
+                  <span id="previstoLabelGestor" class="fw-bold <%= isPrevisto ? 'text-success' : 'text-danger' %>" style="min-width: 35px; text-align: right;">
+                    <%= isPrevisto ? 'Sim' : 'Não' %>
+                  </span>
+                  <input class="form-check-input ms-0" type="checkbox" name="previstoNoCargoGestor" id="previstoNoCargoGestor" <%= isPrevisto ? 'checked' : '' %> style="width: 3.5em; height: 1.75em; cursor: pointer;">
                 </div>
               </div>
             </div>
@@ -273,7 +277,7 @@
               <select class="form-select" name="timeId" id="timeSelect" style="height: 50px; border-radius: 10px;" onchange="toggleAssignment('time')">
                 <option value="">Nenhum (Atribuição Individual)</option>
                 <% times.forEach(t => { %>
-                  <option value="<%= t.id %>"><%= t.nome %></option>
+                  <option value="<%= t.id %>" <%= (typeof tarefa !== 'undefined' && tarefa.time && tarefa.time.id === t.id) ? 'selected' : '' %>><%= t.nome %></option>
                 <% }) %>
               </select>
             </div>
@@ -281,7 +285,9 @@
 
           <div class="d-flex justify-content-end gap-2 mt-4">
             <a href="/dashboard" class="btn btn-light px-4">Cancelar</a>
-            <button type="submit" class="btn btn-potiguar px-4">Criar Tarefa</button>
+            <button type="submit" class="btn btn-potiguar px-4">
+                <%= typeof tarefa !== 'undefined' ? 'Salvar Alterações' : 'Criar Tarefa' %>
+            </button>
           </div>
         </form>
       </div>
@@ -293,9 +299,20 @@
     <%- JSON.stringify(usuarios.filter(u => u.nivel === 'COLABORADOR')) %>
 </script>
 
+<% if (typeof tarefa !== 'undefined' && tarefa.responsaveis) { %>
+<script id="tarefa-responsaveis" type="application/json">
+    <%- JSON.stringify(tarefa.responsaveis.map(r => r.id)) %>
+</script>
+<% } %>
+
 <script>
 const colaboradores = JSON.parse(document.getElementById('colaboradores-data').textContent);
 let selectedIds = new Set();
+const respElement = document.getElementById('tarefa-responsaveis');
+if (respElement) {
+    JSON.parse(respElement.textContent).forEach(id => selectedIds.add(id));
+}
+
 let highlightedIndex = -1;
 
 const container = document.getElementById('colabMultiSelect');
@@ -309,7 +326,6 @@ const msHint = document.getElementById('ms-hint');
 const timeSelect = document.getElementById('timeSelect');
 const msWarning = document.getElementById('ms-warning');
 
-// Gera uma URL de avatar aleatório baseado no nome (DiceBear)
 function getAvatarUrl(name) {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 }
@@ -345,8 +361,16 @@ function renderChips() {
   if (count > 0) {
     timeSelect.value = "";
     timeSelect.disabled = true;
+    msBox.classList.remove('disabled');
+    searchInput.disabled = false;
   } else if (timeSelect.value === "") {
     timeSelect.disabled = false;
+    msBox.classList.remove('disabled');
+    searchInput.disabled = false;
+  } else {
+    // Caso tenha time selecionado
+    msBox.classList.add('disabled');
+    searchInput.disabled = true;
   }
 }
 
@@ -400,8 +424,9 @@ function removeColab(e, id) {
   renderDropdown(searchInput.value);
 }
 
-// Event Listeners
-msBox.onclick = () => searchInput.focus();
+msBox.onclick = () => {
+    if (!searchInput.disabled) searchInput.focus();
+};
 
 searchInput.onfocus = () => {
   if (!timeSelect.disabled) {
@@ -417,7 +442,6 @@ searchInput.oninput = () => {
 
 searchInput.onkeydown = (e) => {
   const items = dropdown.querySelectorAll('.ms-opt');
-  
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
@@ -459,6 +483,7 @@ function toggleAssignment(type) {
     msBox.classList.remove('disabled');
     searchInput.disabled = false;
     searchInput.placeholder = "Buscar colaborador...";
+    renderChips();
   }
 }
 
@@ -470,6 +495,10 @@ document.getElementById('taskForm').onsubmit = function(e) {
     return false;
   }
 };
+
+// Inicialização
+renderChips();
+if (timeSelect.value !== "") toggleAssignment('time');
 </script>
 
 <%- include('../partials/footer') %>

@@ -25,6 +25,7 @@ module.exports = {
         api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria } }),
     getTarefa: (id, usuarioId) => api.get(`/tarefas/${id}`, { params: { usuarioId } }),
     criarTarefa: (dados) => api.post('/tarefas', dados),
+    atualizarTarefa: (id, dados, usuarioId) => api.put(`/tarefas/${id}`, dados, { params: { usuarioId } }),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),
     getFeedbacks: (id) => api.get(`/tarefas/${id}/feedbacks`),

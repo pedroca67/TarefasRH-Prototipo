@@ -5,49 +5,50 @@
   <div class="col-12 col-md-8">
     <div class="card shadow-sm">
       <div class="card-header bg-potiguar text-white py-3">
-        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-person-plus me-2"></i>Nova Tarefa Pessoal</h5>
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-<%= typeof tarefa !== 'undefined' ? 'pencil-square' : 'plus-lg' %> me-2"></i>
+            <%= typeof tarefa !== 'undefined' ? 'Editar' : 'Nova' %> Tarefa Pessoal
+        </h5>
       </div>
       <div class="card-body p-4">
         <div class="alert alert-info py-2 small mb-4">
             <i class="bi bi-info-circle me-1"></i> Esta tarefa será atribuída automaticamente a <strong>você</strong>.
         </div>
         
-        <form action="/tarefas" method="POST">
+        <form action="/tarefas<%= typeof tarefa !== 'undefined' ? '/' + tarefa.id : '' %>" method="POST">
           <div class="mb-3">
             <label class="form-label fw-bold">Título</label>
-            <input class="form-control" type="text" name="titulo" placeholder="Ex: Organizar minha mesa" required>
+            <input class="form-control" type="text" name="titulo" value="<%= typeof tarefa !== 'undefined' ? tarefa.titulo : '' %>" placeholder="Ex: Organizar minha mesa" required>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-bold">Descrição</label>
-            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."></textarea>
+            <textarea class="form-control" name="descricao" rows="3" placeholder="Detalhes da tarefa..."><%= typeof tarefa !== 'undefined' ? tarefa.descricao : '' %></textarea>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label fw-bold">Complexidade</label>
               <select class="form-select" name="complexidade">
-                <option value="BAIXA">Baixa</option>
-                <option value="MEDIA">Média</option>
-                <option value="ALTA">Alta</option>
+                <option value="BAIXA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'BAIXA') ? 'selected' : '' %>>Baixa</option>
+                <option value="MEDIA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'MEDIA') ? 'selected' : '' %>>Média</option>
+                <option value="ALTA" <%= (typeof tarefa !== 'undefined' && tarefa.complexidade === 'ALTA') ? 'selected' : '' %>>Alta</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-bold">Categoria</label>
               <select class="form-select" name="categoria" required>
-                <option value="RECRUTAMENTO_E_SELECAO">Recrutamento e Seleção</option>
-                <option value="DEPARTAMENTO_PESSOAL">Departamento Pessoal</option>
-                <option value="TREINAMENTO_E_DESENVOLVIMENTO">Treinamento e Desenvolvimento</option>
-                <option value="CARGOS_E_SALARIOS">Cargos e Salários</option>
-                <option value="BENEFICIOS">Benefícios</option>
-                <option value="ENDOMARKETING">Endomarketing</option>
-                <option value="SAUDE_E_SEGURANCA">Saúde e Segurança</option>
-                <option value="OUTROS" selected>Outros</option>
+                <% const cats = ['RECRUTAMENTO_E_SELECAO', 'DEPARTAMENTO_PESSOAL', 'TREINAMENTO_E_DESENVOLVIMENTO', 'CARGOS_E_SALARIOS', 'BENEFICIOS', 'ENDOMARKETING', 'SAUDE_E_SEGURANCA', 'OUTROS']; %>
+                <% cats.forEach(cat => { %>
+                    <option value="<%= cat %>" <%= (typeof tarefa !== 'undefined' && tarefa.categoria === cat) ? 'selected' : (cat === 'OUTROS' ? 'selected' : '') %>>
+                        <%= cat.replace(/_/g, ' ') %>
+                    </option>
+                <% }) %>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-bold">Prazo</label>
-              <input class="form-control" type="date" name="dataPrazo" required>
+              <input class="form-control" type="date" name="dataPrazo" value="<%= typeof tarefa !== 'undefined' ? new Date(tarefa.dataPrazo).toISOString().split('T')[0] : '' %>" required>
             </div>
           </div>
 
@@ -68,7 +69,9 @@
 
           <div class="d-flex justify-content-end gap-2 mt-4">
             <a href="/dashboard" class="btn btn-light px-4">Cancelar</a>
-            <button type="submit" class="btn btn-potiguar px-4">Criar Minha Tarefa</button>
+            <button type="submit" class="btn btn-potiguar px-4">
+                <%= typeof tarefa !== 'undefined' ? 'Salvar Alterações' : 'Criar Minha Tarefa' %>
+            </button>
           </div>
         </form>
       </div>
