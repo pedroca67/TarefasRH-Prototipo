@@ -232,7 +232,7 @@
 function goBack() {
     if (document.referrer && document.referrer.includes('/calendario')) {
         window.location.href = '/tarefas/calendario';
-    } else if (document.referrer && document.referrer.includes('/tarefas') && !document.referrer.includes('/tarefas/nova')) {
+    } else if (document.referrer && document.referrer.includes('/tarefas') && !document.referrer.includes('/tarefas/nova') && !document.referrer.includes('/editar')) {
         window.location.href = document.referrer;
     } else {
         window.location.href = '/dashboard';
