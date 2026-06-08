@@ -173,6 +173,46 @@ public class TarefaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Tarefa dados, @RequestParam Long usuarioId) {
+        return tarefaRepository.findById(id).map(t -> {
+            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
+            if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
+
+            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
+            boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
+
+            if (!isGestor && !isCriador) {
+                return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
+            }
+
+            t.setTitulo(dados.getTitulo());
+            t.setDescricao(dados.getDescricao());
+            t.setComplexidade(dados.getComplexidade());
+            t.setCategoria(dados.getCategoria());
+            t.setDataPrazo(dados.getDataPrazo());
+            t.setPrevistoNoCargoGestor(dados.isPrevistoNoCargoGestor());
+
+            if (dados.getTime() != null && dados.getTime().getId() != null) {
+                t.setTime(timeRepository.findById(dados.getTime().getId()).orElse(null));
+                t.setResponsaveis(new java.util.HashSet<>());
+            } else {
+                t.setTime(null);
+                if (dados.getResponsaveis() != null) {
+                    java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
+                        .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
+                        .collect(Collectors.toSet());
+                    t.setResponsaveis(resps);
+                }
+            }
+
+            Tarefa salva = tarefaRepository.save(t);
+            googleSheetsService.syncAllTasks();
+            return ResponseEntity.ok(salva);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<Tarefa> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return tarefaRepository.findById(id).map(t -> {
