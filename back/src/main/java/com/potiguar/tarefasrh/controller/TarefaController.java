@@ -122,6 +122,12 @@ public class TarefaController {
         }
     }
 
+    @PostMapping("/sync-sheets")
+    public ResponseEntity<?> forceSyncSheets() {
+        googleSheetsService.syncAllTasks();
+        return ResponseEntity.ok(Map.of("message", "Sincronização iniciada com sucesso."));
+    }
+
     @PostMapping
     @Transactional
     public ResponseEntity<?> criar(@RequestBody Tarefa tarefa) {
