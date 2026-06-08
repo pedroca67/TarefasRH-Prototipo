@@ -23,7 +23,8 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
             "(:search IS NULL OR LOWER(t.titulo) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
             "(:startDate IS NULL OR :endDate IS NULL OR " +
             " (t.dataCriacao >= :startDate AND t.dataCriacao <= :endDate) OR " +
-            " (CAST(t.dataPrazo AS LocalDateTime) >= :startDate AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate))",
+            " (CAST(t.dataPrazo AS LocalDateTime) >= :startDate AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate) OR " +
+            " ((t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate))",
             countQuery = "SELECT COUNT(DISTINCT t) FROM Tarefa t " +
             "LEFT JOIN t.responsaveis r " +
             "WHERE " +
@@ -35,7 +36,8 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
             "(:search IS NULL OR LOWER(t.titulo) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
             "(:startDate IS NULL OR :endDate IS NULL OR " +
             " (t.dataCriacao >= :startDate AND t.dataCriacao <= :endDate) OR " +
-            " (CAST(t.dataPrazo AS LocalDateTime) >= :startDate AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate))")
+            " (CAST(t.dataPrazo AS LocalDateTime) >= :startDate AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate) OR " +
+            " ((t.status = 'ATRASADA' OR (t.status = 'PENDENTE' AND t.dataPrazo < CURRENT_DATE)) AND CAST(t.dataPrazo AS LocalDateTime) <= :endDate))")
     org.springframework.data.domain.Page<Tarefa> findComFiltros(
             @org.springframework.data.repository.query.Param("responsavelId") Long responsavelId,
             @org.springframework.data.repository.query.Param("timeId") Long timeId,

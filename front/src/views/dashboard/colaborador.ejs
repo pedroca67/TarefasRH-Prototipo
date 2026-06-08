@@ -434,13 +434,6 @@
         }
 
         applyFilters(false);
-
-        // Restaurar Scroll
-        const savedScroll = sessionStorage.getItem(`scroll_${window.location.pathname}`);
-        if (savedScroll) {
-            window.scrollTo(0, parseInt(savedScroll));
-            sessionStorage.removeItem(`scroll_${window.location.pathname}`);
-        }
     }
 
     // Salvar aba ativa ao trocar
@@ -448,13 +441,6 @@
         button.addEventListener('shown.bs.tab', (e) => {
             localStorage.setItem('colabDashboardActiveTab', e.target.getAttribute('data-bs-target'));
         });
-    });
-
-    // Salvar scroll ao clicar em um link de detalhe
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('a') && e.target.closest('tbody')) {
-            sessionStorage.setItem(`scroll_${window.location.pathname}`, window.scrollY);
-        }
     });
 
     document.getElementById('liveSearch').addEventListener('input', () => applyFilters(true));

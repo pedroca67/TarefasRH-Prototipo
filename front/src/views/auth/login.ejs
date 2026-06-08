@@ -67,4 +67,30 @@
   </div>
 </section>
 
+<script>
+    // Limpeza de cache local ao deslogar/expirar sessão
+    document.addEventListener('DOMContentLoaded', () => {
+        // Limpar posições de scroll salvas
+        if (typeof sessionStorage !== 'undefined') {
+            Object.keys(sessionStorage).forEach(key => {
+                if (key.startsWith('scroll_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+        }
+        
+        // Limpar filtros de abas e tabelas salvos
+        if (typeof localStorage !== 'undefined') {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('DataTables_') || key.includes('Filter') || key.includes('Tab')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            localStorage.removeItem('colabDashboardActiveTab');
+            localStorage.removeItem('colabDashboardFilters');
+            localStorage.removeItem('dashboardFilters');
+        }
+    });
+</script>
+
 <%- include('../partials/footer') %>

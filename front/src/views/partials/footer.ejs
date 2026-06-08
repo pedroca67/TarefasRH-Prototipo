@@ -167,22 +167,31 @@
             paginationContainer.appendChild(nav);
         }
 
-        // Adicionar listener nos links de detalhes dentro da tabela para salvar scroll
-        tbody.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                sessionStorage.setItem(`scroll_${window.location.pathname}`, window.scrollY);
-            });
-        });
-
         showPage(currentPage);
-
-        // Restaurar scroll se houver
-        const savedScroll = sessionStorage.getItem(`scroll_${window.location.pathname}`);
-        if (savedScroll) {
-            window.scrollTo(0, parseInt(savedScroll));
-            sessionStorage.removeItem(`scroll_${window.location.pathname}`);
-        }
     }
+
+    // Lógica Global de Restauração de Scroll
+    document.addEventListener('DOMContentLoaded', () => {
+        const scrollKey = `scroll_${window.location.pathname}${window.location.search}`;
+        
+        // 1. Restaurar scroll se existir
+        const savedScroll = sessionStorage.getItem(scrollKey);
+        if (savedScroll) {
+            // Pequeno delay para garantir que o DOM (especialmente tabelas e gráficos) esteja renderizado
+            setTimeout(() => {
+                window.scrollTo(0, parseInt(savedScroll));
+                sessionStorage.removeItem(scrollKey);
+            }, 100);
+        }
+
+        // 2. Salvar scroll ao clicar em links que navegam para fora (ex: detalhes da tarefa)
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.href.includes('#') && link.hostname === window.location.hostname) {
+                sessionStorage.setItem(scrollKey, window.scrollY);
+            }
+        });
+    });
 
     // Função para limpar memórias de página ao fazer logout ou trocar de contexto maior
     function limparMemoriasDeNavegacao() {
