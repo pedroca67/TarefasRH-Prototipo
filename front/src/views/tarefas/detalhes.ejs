@@ -213,7 +213,7 @@
         <% } %>
         
         <div class="mt-5">
-          <a href="/dashboard" class="btn btn-light text-muted btn-sm"><i class="bi bi-arrow-left me-1"></i>Voltar para Dashboard</a>
+          <button onclick="goBack()" class="btn btn-light text-muted btn-sm"><i class="bi bi-arrow-left me-1"></i>Voltar</button>
         </div>
       </div>
     </div>
@@ -221,6 +221,16 @@
 </div>
 
 <script>
+function goBack() {
+    if (document.referrer && document.referrer.includes('/calendario')) {
+        window.location.href = '/tarefas/calendario';
+    } else if (document.referrer && document.referrer.includes('/tarefas') && !document.referrer.includes('/tarefas/nova')) {
+        window.location.href = document.referrer;
+    } else {
+        window.location.href = '/dashboard';
+    }
+}
+
 function toggleEvidencia(status) {
   const field = document.getElementById('evidenciaField');
   field.style.display = (status === 'CONCLUIDA') ? 'block' : 'none';
