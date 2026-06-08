@@ -190,9 +190,9 @@ public class GoogleSheetsService {
     }
 
     private void updateSheet(Sheets service, String range, List<List<Object>> values) throws Exception {
-        // Limpa apenas a área necessária para não dar erro de permissão em células protegidas
+        // Limpa a área inteira da aba para garantir que dados 'fantasmas' de execuções anteriores sejam apagados
         String sheetName = range.contains("!") ? range.split("!")[0] : range;
-        service.spreadsheets().values().clear(spreadsheetId, sheetName + "!A1:Z5000", null).execute();
+        service.spreadsheets().values().clear(spreadsheetId, sheetName + "!A1:Z10000", null).execute();
         
         ValueRange body = new ValueRange().setValues(values);
         service.spreadsheets().values().update(spreadsheetId, range, body)
