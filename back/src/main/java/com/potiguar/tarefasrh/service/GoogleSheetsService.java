@@ -97,7 +97,8 @@ public class GoogleSheetsService {
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
                     t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 3, // 1pt = 3h
-                    t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toString() : "-",
+                    t.getDataPrazo().toString(), 
+                    t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "-",
                     t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
                 ));
             }
@@ -113,8 +114,8 @@ public class GoogleSheetsService {
                     u.getId().toString(), u.getNome(), u.getEmail(), u.getLoja() != null ? u.getLoja() : "-",
                     u.getTime() != null ? u.getTime().getNome() : "-", u.getNivel().toString(),
                     u.isAtivo() ? "ATIVO" : "INATIVO",
-                    u.getDataCriacao() != null ? u.getDataCriacao().toString() : "-",
-                    u.getDataDesativacao() != null ? u.getDataDesativacao().toString() : "-"
+                    u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate().toString() : "-",
+                    u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate().toString() : "-"
                 ));
             }
 
