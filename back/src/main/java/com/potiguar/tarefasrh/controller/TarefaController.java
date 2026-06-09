@@ -164,17 +164,69 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Tarefa dados, @RequestParam Long usuarioId) {
+        return tarefaRepository.findById(id).map(t -> {
+            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
+            if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
+
+            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
+            boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
+
+            if (!isGestor && !isCriador) {
+                return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
+            }
+
+            t.setTitulo(dados.getTitulo());
+            t.setDescricao(dados.getDescricao());
+            t.setComplexidade(dados.getComplexidade());
+            t.setCategoria(dados.getCategoria());
+            t.setDataPrazo(dados.getDataPrazo());
+            t.setPrevistoNoCargoGestor(dados.isPrevistoNoCargoGestor());
+
+            if (dados.getTime() != null && dados.getTime().getId() != null) {
+                t.setTime(timeRepository.findById(dados.getTime().getId()).orElse(null));
+                t.setResponsaveis(new java.util.HashSet<>());
+            } else {
+                t.setTime(null);
+                if (dados.getResponsaveis() != null) {
+                    java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
+                        .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
+                        .collect(Collectors.toSet());
+                    t.setResponsaveis(resps);
+                }
+            }
+
+            Tarefa salva = tarefaRepository.save(t);
+            googleSheetsService.syncAllTasks();
+            return ResponseEntity.ok(salva);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<Tarefa> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String concluidoPorId = body.get("concluidoPorId");
+        if (concluidoPorId == null) return ResponseEntity.badRequest().build();
+        Long usuarioId = Long.parseLong(concluidoPorId);
+
         return tarefaRepository.findById(id).map(t -> {
+            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
+            if (user == null) return ResponseEntity.status(401).<Tarefa>build();
+
+            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
+            boolean isResponsavel = t.getResponsaveis().stream().anyMatch(r -> r.getId().equals(usuarioId));
+            boolean isDoTime = t.getTime() != null && user.getTime() != null && t.getTime().getId().equals(user.getTime().getId());
+
+            if (!isGestor && !isResponsavel && !isDoTime) {
+                return ResponseEntity.status(403).<Tarefa>build();
+            }
+
             Status novoStatus = Status.valueOf(body.get("status"));
             if (novoStatus == Status.CONCLUIDA) {
                 t.setEvidencia(body.get("evidencia"));
                 t.setDataConclusao(LocalDateTime.now());
-                if (body.get("concluidoPorId") != null) {
-                    Usuario executor = usuarioRepository.findById(Long.parseLong(body.get("concluidoPorId"))).orElse(null);
-                    t.setConcluidoPor(executor);
-                }
+                t.setConcluidoPor(user);
                 if (body.get("previstoNoCargoColaborador") != null) t.setPrevistoNoCargoColaborador(Boolean.parseBoolean(body.get("previstoNoCargoColaborador")));
             } else {
                 t.setDataConclusao(null);
@@ -196,6 +248,11 @@ public class TarefaController {
                 if (gestorIdObj == null) return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
                 Long gestorId = Long.valueOf(gestorIdObj.toString());
                 Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
+
+                if (gestor.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
+                    return ResponseEntity.status(403).body("Acesso negado. Apenas gestores podem enviar feedback.");
+                }
+
                 Feedback novoFeedback = Feedback.builder().tarefa(t).gestor(gestor).mensagem(body.get("feedback").toString()).build();
                 Feedback salvo = feedbackRepository.save(novoFeedback);
                 String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
@@ -257,13 +314,19 @@ public class TarefaController {
         List<Tarefa> todasBase = tarefaRepository.findAll();
         todasBase = atualizarStatusAtrasadas(todasBase);
 
-        // RÉGUA OPERACIONAL: Filtra por Criação (para o Total de tarefas do período)
+        // RÉGUA OPERACIONAL: Filtra por Criação
         List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
         
-        // RÉGUA ANALÍTICA: Filtra por Conclusão (para Ranking e Produtividade)
+        // RÉGUA ANALÍTICA: Filtra por Conclusão
         List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, true);
 
+        // Esforço das concluídas no período (Analítico)
         long esforcoConcluido = tarefasPerformance.stream()
+                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
+                .sum();
+
+        // Esforço TOTAL das tarefas nascidas no período (Operacional)
+        long esforcoTotal = tarefasStatus.stream()
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
@@ -291,24 +354,17 @@ public class TarefaController {
         
         long concluidasHorasEst = esforcoConcluido * 3;
 
-        // --- AJUSTE DE ATRASADAS: Visão Inclusiva para o Gestor ---
-        // Pegamos todas as atrasadas cujo PRAZO cai no período, mesmo se criadas antes.
-        long atrasadasCount = todasBase.stream()
-            .filter(t -> t.getStatus() == Status.ATRASADA)
-            .filter(t -> {
-                LocalDate prazo = t.getDataPrazo();
-                if (startDate != null && prazo.isBefore(startDate)) return false;
-                if (endDate != null && prazo.isAfter(endDate)) return false;
-                return true;
-            }).count();
-
-        // Ranking (Top 5 mais urgentes atrasadas)
+        // Atenção Prioritária: Atrasadas cujo PRAZO cai no período do filtro
         List<Tarefa> topAtrasadas = todasBase.stream()
                 .filter(t -> t.getStatus() == Status.ATRASADA)
+                .filter(t -> {
+                    LocalDate prazo = t.getDataPrazo();
+                    return (startDate == null || !prazo.isBefore(startDate)) && (endDate == null || !prazo.isAfter(endDate));
+                })
                 .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
                 .limit(5).collect(Collectors.toList());
 
-        // Ranking de Performance
+        // Ranking
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
         tarefasPerformance.forEach(t -> {
             Usuario executor = t.getConcluidoPor();
@@ -347,10 +403,10 @@ public class TarefaController {
         stats.put("total", (long) tarefasStatus.size());
         stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
         stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
-        stats.put("concluida", (long) tarefasPerformance.size()); 
-        stats.put("atrasada", atrasadasCount); // <--- AQUI ESTÁ O NOVO CONTADOR
+        stats.put("concluida", tarefasStatus.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count()); 
+        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", (long)totalHorasEst / 3); 
+        stats.put("esforco_total", esforcoTotal); 
         stats.put("esforco_concluido", esforcoConcluido);
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
         stats.put("aderencia_gestor_nao", aderenciaGestorNao);
