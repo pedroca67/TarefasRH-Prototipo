@@ -57,13 +57,12 @@ public class TarefaController {
             if (useCompletionDate) {
                 if (t.getDataConclusao() == null) return false;
                 LocalDate dataConc = t.getDataConclusao().toLocalDate();
-                if (startDate != null) matches = matches && dataConc.isAfter(startDate.minusDays(1));
-                if (endDate != null) matches = matches && dataConc.isBefore(endDate.plusDays(1));
+                if (startDate != null) matches = matches && !dataConc.isBefore(startDate);
+                if (endDate != null) matches = matches && !dataConc.isAfter(endDate);
             } else {
                 LocalDate dataRef = t.getDataCriacao().toLocalDate();
-                LocalDate dataPrazo = t.getDataPrazo();
-                if (startDate != null) matches = matches && (dataRef.isAfter(startDate.minusDays(1)) || dataPrazo.isAfter(startDate.minusDays(1)));
-                if (endDate != null) matches = matches && (dataRef.isBefore(endDate.plusDays(1)) || dataPrazo.isBefore(endDate.plusDays(1)));
+                if (startDate != null) matches = matches && !dataRef.isBefore(startDate);
+                if (endDate != null) matches = matches && !dataRef.isAfter(endDate);
             }
             return matches;
         }).collect(Collectors.toList());
@@ -91,55 +90,61 @@ public class TarefaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
+        List<Tarefa> tarefas;
         try {
-            LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
-            LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : null;
-            
-            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("dataCriacao").descending());
-            
-            org.springframework.data.domain.Page<Tarefa> pageResult = tarefaRepository.findComFiltros(
-                    responsavelId, timeId, status, complexidade, categoria, 
-                    (search != null && !search.isBlank()) ? search : null, 
-                    startDateTime, endDateTime, pageable);
-
-            // Atualização de status em tempo de execução (apenas visual para o retorno)
-            LocalDate hoje = LocalDate.now();
-            pageResult.getContent().forEach(t -> {
-                if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje)) {
-                    t.setStatus(Status.ATRASADA);
-                }
-            });
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("content", pageResult.getContent());
-            response.put("currentPage", pageResult.getNumber());
-            response.put("totalItems", pageResult.getTotalElements());
-            response.put("totalPages", pageResult.getTotalPages());
-
-            return response;
+            if (responsavelId != null) {
+                Usuario resp = usuarioRepository.findById(responsavelId).orElse(null);
+                if (resp == null) return emptyPaginatedResponse(page);
+                tarefas = tarefaRepository.findByResponsaveisContaining(resp);
+            } else if (timeId != null) {
+                Time time = timeRepository.findById(timeId).orElse(null);
+                if (time == null) return emptyPaginatedResponse(page);
+                tarefas = tarefaRepository.findByTime(time);
+            } else {
+                tarefas = tarefaRepository.findAll();
+            }
         } catch (Exception e) {
             return emptyPaginatedResponse(page);
         }
-    }
 
-    @PostMapping("/sync-sheets")
-    public ResponseEntity<?> forceSyncSheets() {
-        googleSheetsService.syncAllTasks();
-        return ResponseEntity.ok(Map.of("message", "Sincronização iniciada com sucesso."));
+        if (search != null && !search.isBlank()) {
+            String s = search.toLowerCase();
+            tarefas = tarefas.stream().filter(t -> t.getTitulo().toLowerCase().contains(s)).collect(Collectors.toList());
+        }
+        if (status != null) tarefas = tarefas.stream().filter(t -> t.getStatus() == status).collect(Collectors.toList());
+        if (complexidade != null) tarefas = tarefas.stream().filter(t -> t.getComplexidade() == complexidade).collect(Collectors.toList());
+        if (categoria != null) tarefas = tarefas.stream().filter(t -> t.getCategoria() == categoria).collect(Collectors.toList());
+        
+        tarefas = filtrarPorPeriodo(tarefas, startDate, endDate, false);
+        tarefas = atualizarStatusAtrasadas(tarefas);
+        tarefas.sort((a, b) -> b.getDataCriacao().compareTo(a.getDataCriacao()));
+
+        int totalItems = tarefas.size();
+        int totalPages = (int) Math.ceil((double) totalItems / size);
+        int startIdx = Math.min(page * size, totalItems);
+        int endIdx = Math.min(startIdx + size, totalItems);
+        
+        List<Tarefa> paginatedContent = tarefas.subList(startIdx, endIdx);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", paginatedContent);
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalPages", totalPages);
+
+        return response;
     }
 
     @PostMapping
     @Transactional
     public ResponseEntity<?> criar(@RequestBody Tarefa tarefa) {
-        if (tarefa.getResponsaveis() != null && !tarefa.getResponsaveis().isEmpty() && tarefa.getTime() != null && tarefa.getTime().getId() != null) {
+        if (!tarefa.getResponsaveis().isEmpty() && tarefa.getTime() != null) {
             return ResponseEntity.badRequest().body("Selecione apenas um tipo de atribuição.");
         }
-        if (tarefa.getResponsaveis() != null) {
-            java.util.Set<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
-                    .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                    .collect(Collectors.toSet());
-            tarefa.setResponsaveis(responsaveisCompletos);
-        }
+        List<Usuario> responsaveisCompletos = tarefa.getResponsaveis().stream()
+                .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
+                .collect(Collectors.toList());
+        tarefa.setResponsaveis(new java.util.HashSet<>(responsaveisCompletos));
         if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
             Time timeCompleto = timeRepository.findById(tarefa.getTime().getId()).orElseThrow();
             tarefa.setTime(timeCompleto);
@@ -151,65 +156,11 @@ public class TarefaController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Tarefa> buscar(@PathVariable Long id, @RequestParam(required = false) Long usuarioId) {
-        return tarefaRepository.findById(id)
-                .map(t -> {
-                    // IDOR Mitigation: Basic check if user is associated with the task or is a manager
-                    if (usuarioId != null) {
-                        Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
-                        if (user != null && user.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
-                            boolean isResponsavel = t.getResponsaveis().stream().anyMatch(r -> r.getId().equals(usuarioId));
-                            boolean isDoTime = t.getTime() != null && user.getTime() != null && t.getTime().getId().equals(user.getTime().getId());
-                            if (!isResponsavel && !isDoTime) {
-                                return ResponseEntity.status(403).<Tarefa>build();
-                            }
-                        }
-                    }
-
-                    if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now())) {
-                        t.setStatus(Status.ATRASADA);
-                    }
-                    return ResponseEntity.ok(t);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/{id}")
-    @Transactional
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Tarefa dados, @RequestParam Long usuarioId) {
         return tarefaRepository.findById(id).map(t -> {
-            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
-            if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
-
-            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
-            boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
-
-            if (!isGestor && !isCriador) {
-                return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
+            if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now())) {
+                t.setStatus(Status.ATRASADA);
             }
-
-            t.setTitulo(dados.getTitulo());
-            t.setDescricao(dados.getDescricao());
-            t.setComplexidade(dados.getComplexidade());
-            t.setCategoria(dados.getCategoria());
-            t.setDataPrazo(dados.getDataPrazo());
-            t.setPrevistoNoCargoGestor(dados.isPrevistoNoCargoGestor());
-
-            if (dados.getTime() != null && dados.getTime().getId() != null) {
-                t.setTime(timeRepository.findById(dados.getTime().getId()).orElse(null));
-                t.setResponsaveis(new java.util.HashSet<>());
-            } else {
-                t.setTime(null);
-                if (dados.getResponsaveis() != null) {
-                    java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
-                        .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                        .collect(Collectors.toSet());
-                    t.setResponsaveis(resps);
-                }
-            }
-
-            Tarefa salva = tarefaRepository.save(t);
-            googleSheetsService.syncAllTasks();
-            return ResponseEntity.ok(salva);
+            return ResponseEntity.ok(t);
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -218,17 +169,13 @@ public class TarefaController {
         return tarefaRepository.findById(id).map(t -> {
             Status novoStatus = Status.valueOf(body.get("status"));
             if (novoStatus == Status.CONCLUIDA) {
-                String evidencia = body.get("evidencia");
-                String previstoStr = body.get("previstoNoCargoColaborador");
-                String concluidoPorId = body.get("concluidoPorId");
-                if (evidencia == null || evidencia.trim().isEmpty()) return ResponseEntity.badRequest().<Tarefa>build();
-                t.setEvidencia(evidencia);
+                t.setEvidencia(body.get("evidencia"));
                 t.setDataConclusao(LocalDateTime.now());
-                if (concluidoPorId != null) {
-                    Usuario executor = usuarioRepository.findById(Long.parseLong(concluidoPorId)).orElse(null);
+                if (body.get("concluidoPorId") != null) {
+                    Usuario executor = usuarioRepository.findById(Long.parseLong(body.get("concluidoPorId"))).orElse(null);
                     t.setConcluidoPor(executor);
                 }
-                if (previstoStr != null) t.setPrevistoNoCargoColaborador(Boolean.parseBoolean(previstoStr));
+                if (body.get("previstoNoCargoColaborador") != null) t.setPrevistoNoCargoColaborador(Boolean.parseBoolean(body.get("previstoNoCargoColaborador")));
             } else {
                 t.setDataConclusao(null);
                 t.setConcluidoPor(null);
@@ -240,135 +187,108 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{id}/feedback")
-    @Transactional
-    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        try {
-            return tarefaRepository.findById(id).map(t -> {
-                Object gestorIdObj = body.get("gestorId");
-                if (gestorIdObj == null) return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
-                Long gestorId = Long.valueOf(gestorIdObj.toString());
-                Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
-                Feedback novoFeedback = Feedback.builder().tarefa(t).gestor(gestor).mensagem(body.get("feedback").toString()).build();
-                Feedback salvo = feedbackRepository.save(novoFeedback);
-                String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
-                t.getResponsaveis().forEach(u -> {
-                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
-                });
-                if (t.getTime() != null) {
-                    usuarioRepository.findAll().stream().filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
-                            .forEach(u -> {
-                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
-                            });
-                }
-                googleSheetsService.syncAllTasks();
-                return ResponseEntity.ok(salvo);
-            }).orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao salvar feedback: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/{id}/feedbacks")
-    public List<Feedback> listarFeedbacks(@PathVariable Long id) {
-        Tarefa t = tarefaRepository.findById(id).orElseThrow();
-        return feedbackRepository.findByTarefaOrderByDataCriacaoDesc(t);
-    }
-
-    @GetMapping("/calendario")
-    public List<Map<String, Object>> getCalendario(
-            @RequestParam(required = false) Long responsavelId,
-            @RequestParam(required = false) Long timeId,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
-        
-        List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
-
-        LocalDate hoje = LocalDate.now();
-
-        return tarefas.stream().map(t -> {
-            Map<String, Object> event = new HashMap<>();
-            event.put("id", t.getId());
-            event.put("title", t.getTitulo());
-            event.put("start", t.getDataPrazo().toString());
-            
-            Status currentStatus = t.getStatus();
-            if (currentStatus != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje)) {
-                currentStatus = Status.ATRASADA;
-            }
-            
-            event.put("status", currentStatus.toString());
-            return event;
-        }).collect(Collectors.toList());
-    }
-
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "false") boolean analyticalMode) {
         
-        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : LocalDateTime.now().minusYears(10);
-        LocalDateTime endDateTime = endDate != null ? endDate.atTime(23, 59, 59) : LocalDateTime.now();
+        List<Tarefa> todasBase = tarefaRepository.findAll();
+        todasBase = atualizarStatusAtrasadas(todasBase);
 
-        Map<String, Object> stats = new HashMap<>();
-        long pendentes = tarefaRepository.countPendentesNaoAtrasadas(startDateTime, endDateTime);
-        long concluidas = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.CONCLUIDA, startDateTime, endDateTime);
-        long atrasadas = tarefaRepository.countAtrasadas(startDateTime, endDateTime);
-        long emAndamento = tarefaRepository.countByStatusAndDataCriacaoBetween(Status.EM_ANDAMENTO, startDateTime, endDateTime);
-
-        stats.put("pendente", pendentes);
-        stats.put("concluida", concluidas);
-        stats.put("atrasada", atrasadas);
-        stats.put("em_andamento", emAndamento);
-        stats.put("total", pendentes + concluidas + atrasadas + emAndamento);
+        // RÉGUA OPERACIONAL: Filtra por Criação (para o Total de tarefas do período)
+        List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
         
-        stats.put("aderencia_gestor_sim", tarefaRepository.countByAderenciaGestor(true, startDateTime, endDateTime));
-        stats.put("aderencia_gestor_nao", tarefaRepository.countByAderenciaGestor(false, startDateTime, endDateTime));
+        // RÉGUA ANALÍTICA: Filtra por Conclusão (para Ranking e Produtividade)
+        List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, true);
 
-        stats.put("total_times", timeRepository.count());
+        long esforcoConcluido = tarefasPerformance.stream()
+                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
+                .sum();
 
-        // --- Top Atrasadas para o Dashboard ---
-        stats.put("topAtrasadas", tarefaRepository.findTopAtrasadas(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5)));
+        long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
+        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> !t.isPrevistoNoCargoGestor()).count();
+        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
-        // --- Ranking Otimizado ---
-        List<Object[]> rankingRaw = tarefaRepository.findRankingData(startDateTime, endDateTime, org.springframework.data.domain.PageRequest.of(0, 5));
-        List<Map<String, Object>> ranking = rankingRaw.stream().map(row -> {
-            Map<String, Object> item = new HashMap<>();
-            item.put("nome", row[0]);
-            item.put("pontos", row[1]);
-            return item;
-        }).collect(Collectors.toList());
-        stats.put("ranking", ranking);
-
-        // --- Esforço Concluído ---
-        long esforcoConcluido = tarefaRepository.sumEsforcoConcluido(startDateTime, endDateTime);
-        stats.put("esforco_concluido", esforcoConcluido);
-        stats.put("concluidas_horas_est", esforcoConcluido * 3);
-        
-        // Capacity calculation (remains somewhat manual for now but optimized)
+        // Capacidade
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         double totalHorasEst = 0;
+        LocalDate dataMinimaAdmissao = todosUsuarios.stream().map(u -> u.getDataCriacao().toLocalDate()).min(LocalDate::compareTo).orElse(LocalDate.now().minusDays(30));
+        LocalDate filterStart = startDate != null ? startDate : dataMinimaAdmissao;
+        LocalDate filterEnd = endDate != null ? endDate : LocalDate.now();
+
         for (Usuario u : todosUsuarios) {
             LocalDate admission = u.getDataCriacao().toLocalDate();
-            LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : endDate != null ? endDate : LocalDate.now();
-            LocalDate activeStart = admission.isAfter(startDate != null ? startDate : admission) ? admission : (startDate != null ? startDate : admission);
-            LocalDate activeEnd = deactivation.isBefore(endDate != null ? endDate : LocalDate.now()) ? deactivation : (endDate != null ? endDate : LocalDate.now());
-            
+            LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
+            LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
+            LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
             if (!activeStart.isAfter(activeEnd)) {
-                long activeDays = 0;
-                LocalDate current = activeStart;
-                while (!current.isAfter(activeEnd)) {
-                    if (current.getDayOfWeek() != java.time.DayOfWeek.SATURDAY && current.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
-                        activeDays++;
-                    }
-                    current = current.plusDays(1);
-                }
-                totalHorasEst += (activeDays * 8.0);
+                long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
+                totalHorasEst += (activeDays * (40.0 / 7.0));
             }
         }
-        stats.put("total_horas_est", (long)totalHorasEst);
+        
+        long concluidasHorasEst = esforcoConcluido * 3;
 
+        // Ranking (Top 5 mais urgentes atrasadas)
+        List<Tarefa> topAtrasadas = todasBase.stream()
+                .filter(t -> t.getStatus() == Status.ATRASADA)
+                .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
+                .limit(5).collect(Collectors.toList());
+
+        // Ranking de Performance
+        Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
+        tarefasPerformance.forEach(t -> {
+            Usuario executor = t.getConcluidoPor();
+            if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().iterator().next();
+            if (executor != null) {
+                long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
+                pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
+            }
+        });
+
+        List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
+                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                .limit(5)
+                .map(e -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("nome", e.getKey().getNome());
+                    item.put("fotoUrl", e.getKey().getFotoUrl());
+                    item.put("pontos", e.getValue());
+                    return item;
+                }).collect(Collectors.toList());
+
+        // Turnover
+        List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            LocalDate mesRef = LocalDate.now().minusMonths(i);
+            long adm = todosUsuarios.stream().filter(u -> u.getDataCriacao().getMonthValue() == mesRef.getMonthValue() && u.getDataCriacao().getYear() == mesRef.getYear()).count();
+            long des = todosUsuarios.stream().filter(u -> u.getDataDesativacao() != null && u.getDataDesativacao().getMonthValue() == mesRef.getMonthValue() && u.getDataDesativacao().getYear() == mesRef.getYear()).count();
+            Map<String, Object> m = new HashMap<>();
+            m.put("mes", mesRef.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("pt", "BR")));
+            m.put("admissoes", adm);
+            m.put("desligamentos", des);
+            turnoverData.add(m);
+        }
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", (long) tarefasStatus.size());
+        stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
+        stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        stats.put("concluida", (long) tarefasPerformance.size()); // Concluídas NO PERÍODO
+        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        stats.put("total_times", timeRepository.count());
+        stats.put("esforco_total", (long)totalHorasEst / 3); 
+        stats.put("esforco_concluido", esforcoConcluido);
+        stats.put("aderencia_gestor_sim", aderenciaGestorSim);
+        stats.put("aderencia_gestor_nao", aderenciaGestorNao);
+        stats.put("aderencia_colab_sim", aderenciaColabSim);
+        stats.put("total_horas_est", (long)totalHorasEst);
+        stats.put("concluidas_horas_est", concluidasHorasEst);
+        stats.put("ranking", ranking);
+        stats.put("topAtrasadas", topAtrasadas);
+        stats.put("turnover", turnoverData);
+        
         return stats;
     }
 }
