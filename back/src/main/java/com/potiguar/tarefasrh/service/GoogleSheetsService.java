@@ -87,9 +87,9 @@ public class GoogleSheetsService {
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
                     t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 3,
-                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
-                    t.getDataPrazo().toString(), 
-                    t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "-",
+                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "",
+                    t.getDataPrazo() != null ? t.getDataPrazo().toString() : "", 
+                    t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "",
                     t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
                 ));
             }
@@ -99,7 +99,13 @@ public class GoogleSheetsService {
             List<List<Object>> valuesTurnover = new ArrayList<>();
             valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
             for (com.potiguar.tarefasrh.model.Usuario u : usuarios) {
-                valuesTurnover.add(Arrays.asList(u.getId().toString(), u.getNome(), u.getEmail(), u.getLoja() != null ? u.getLoja() : "-", u.getTime() != null ? u.getTime().getNome() : "-", u.getNivel().toString(), u.isAtivo() ? "ATIVO" : "INATIVO", u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate().toString() : "-", u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate().toString() : "-"));
+                valuesTurnover.add(Arrays.asList(
+                    u.getId().toString(), u.getNome(), u.getEmail(), u.getLoja() != null ? u.getLoja() : "-", 
+                    u.getTime() != null ? u.getTime().getNome() : "-", u.getNivel().toString(), 
+                    u.isAtivo() ? "ATIVO" : "INATIVO", 
+                    u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate().toString() : "", 
+                    u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate().toString() : ""
+                ));
             }
 
             // --- ABA 3: RESUMO_METRICAS ---
@@ -138,8 +144,9 @@ public class GoogleSheetsService {
                     PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 3,
                     t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
-                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
-                    t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "-"
+                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "",
+                    t.getDataPrazo() != null ? t.getDataPrazo().toString() : "", 
+                    t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : ""
                 ));
             }
 
