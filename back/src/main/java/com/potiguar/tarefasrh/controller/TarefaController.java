@@ -187,6 +187,32 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/calendario")
+    public List<Map<String, Object>> getCalendario(
+            @RequestParam(required = false) Long responsavelId,
+            @RequestParam(required = false) Long timeId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
+        
+        List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
+        LocalDate hoje = LocalDate.now();
+
+        return tarefas.stream().map(t -> {
+            Map<String, Object> event = new HashMap<>();
+            event.put("id", t.getId());
+            event.put("title", t.getTitulo());
+            event.put("start", t.getDataPrazo().toString());
+            
+            String status = t.getStatus().name();
+            if (t.getStatus() == Status.PENDENTE && t.getDataPrazo().isBefore(hoje)) {
+                status = "ATRASADA";
+            }
+            event.put("status", status);
+
+            return event;
+        }).collect(Collectors.toList());
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
