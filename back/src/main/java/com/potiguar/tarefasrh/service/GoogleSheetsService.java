@@ -8,6 +8,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.potiguar.tarefasrh.model.Tarefa;
+import com.potiguar.tarefasrh.model.Usuario;
 import com.potiguar.tarefasrh.repository.TarefaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,15 +63,23 @@ public class GoogleSheetsService {
             
             for (Tarefa t : tarefas) {
                 String responsaveisLabel;
+                // Lógica de Crédito: Prioridade total para Pessoa Física (quem concluiu ou o primeiro da lista)
                 String executorUnico = "-";
+                Usuario principal = t.getConcluidoPor();
+                if (principal == null && t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
+                    principal = t.getResponsaveis().iterator().next();
+                }
+
+                if (principal != null) {
+                    executorUnico = principal.getNome();
+                } else if (t.getTime() != null) {
+                    executorUnico = "Time: " + t.getTime().getNome();
+                }
 
                 if (t.getTime() != null) {
                     responsaveisLabel = "Time: " + t.getTime().getNome();
-                    executorUnico = "Time: " + t.getTime().getNome();
                 } else if (t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
-                    responsaveisLabel = t.getResponsaveis().stream().map(com.potiguar.tarefasrh.model.Usuario::getNome).collect(Collectors.joining(", "));
-                    // Lógica do Ranking: quem concluiu ou o primeiro da lista
-                    executorUnico = t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : t.getResponsaveis().iterator().next().getNome();
+                    responsaveisLabel = t.getResponsaveis().stream().map(Usuario::getNome).collect(Collectors.joining(", "));
                 } else {
                     responsaveisLabel = "-";
                 }
@@ -81,12 +90,8 @@ public class GoogleSheetsService {
                     : "-";
 
                 valuesTarefas.add(Arrays.asList(
-                    t.getId().toString(),
-                    t.getTitulo(),
-                    t.getDescricao() != null ? t.getDescricao() : "-",
-                    responsaveisLabel, 
-                    executorUnico,
-                    t.getTime() != null ? t.getTime().getNome() : "-",
+                    t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
+                    responsaveisLabel, executorUnico, t.getTime() != null ? t.getTime().getNome() : "-",
                     t.getCategoria().toString(), t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
@@ -100,10 +105,10 @@ public class GoogleSheetsService {
             }
 
             // --- ABA 2: BASE_TURNOVER ---
-            List<com.potiguar.tarefasrh.model.Usuario> usuarios = usuarioRepository.findAll();
+            List<Usuario> usuarios = usuarioRepository.findAll();
             List<List<Object>> valuesTurnover = new ArrayList<>();
             valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
-            for (com.potiguar.tarefasrh.model.Usuario u : usuarios) {
+            for (Usuario u : usuarios) {
                 valuesTurnover.add(Arrays.asList(u.getId().toString(), u.getNome(), u.getEmail(), u.getLoja() != null ? u.getLoja() : "-", u.getTime() != null ? u.getTime().getNome() : "-", u.getNivel().toString(), u.isAtivo() ? "ATIVO" : "INATIVO", u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate().toString() : "", u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate().toString() : ""));
             }
 
@@ -130,8 +135,16 @@ public class GoogleSheetsService {
             valuesLooker.add(Arrays.asList("ID", "Título", "Responsável Único", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criação", "Prazo", "Conclusão"));
             for (Tarefa t : tarefas) {
                 String executorUnico = "-";
-                if (t.getTime() != null) executorUnico = "Time: " + t.getTime().getNome();
-                else if (t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) executorUnico = t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : t.getResponsaveis().iterator().next().getNome();
+                Usuario principal = t.getConcluidoPor();
+                if (principal == null && t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
+                    principal = t.getResponsaveis().iterator().next();
+                }
+
+                if (principal != null) {
+                    executorUnico = principal.getNome();
+                } else if (t.getTime() != null) {
+                    executorUnico = "Time: " + t.getTime().getNome();
+                }
                 
                 valuesLooker.add(Arrays.asList(
                     t.getId().toString(),
