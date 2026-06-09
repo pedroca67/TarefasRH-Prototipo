@@ -24,14 +24,13 @@ module.exports = {
     getTarefas: (responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria) => 
         api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria } }),
     getTarefa: (id, usuarioId) => api.get(`/tarefas/${id}`, { params: { usuarioId } }),
-    getCalendario: (start, end, responsavelId, timeId) => 
-        api.get('/tarefas/calendario', { params: { start, end, responsavelId, timeId } }),
+    getCalendario: (responsavelId, timeId, start, end) => 
+        api.get('/tarefas/calendario', { params: { responsavelId, timeId, start, end } }),
     criarTarefa: (dados) => api.post('/tarefas', dados),
     atualizarTarefa: (id, dados, usuarioId) => api.put(`/tarefas/${id}`, dados, { params: { usuarioId } }),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
     enviarFeedback: (id, feedback, gestorId) => api.post(`/tarefas/${id}/feedback`, { feedback, gestorId }),
     getFeedbacks: (id) => api.get(`/tarefas/${id}/feedbacks`),
-    getCalendario: (responsavelId, timeId, start, end) => api.get('/tarefas/calendario', { params: { responsavelId, timeId, start, end } }),
     
     // Notificações
     getUnreadNotificationsCount: (usuarioId) => api.get('/notificacoes/unread-count', { params: { usuarioId } }),

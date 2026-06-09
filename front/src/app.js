@@ -87,10 +87,12 @@ app.get('/api/internal/notificacoes', authMiddleware, asyncHandler(async (req, r
     res.json(response.data);
 }));
 
+// API Proxy para o Calendário
 app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
     const { start, end, responsavelId, timeId } = req.query;
     try {
-        const response = await apiService.getCalendario(start, end, responsavelId, timeId);
+        // IMPORTANTE: Manter a ordem exata definida em api.js: (responsavelId, timeId, start, end)
+        const response = await apiService.getCalendario(responsavelId, timeId, start, end);
         res.json(response.data);
     } catch (error) {
         console.error('Erro ao buscar dados do calendário:', error);
@@ -270,12 +272,6 @@ app.get('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
 
 app.get('/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
     res.render('tarefas/calendario', { currentPage: 'calendario' });
-}));
-
-app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
-    const { start, end, responsavelId, timeId } = req.query;
-    const response = await apiService.getCalendario(responsavelId, timeId, start, end);
-    res.json(response.data);
 }));
 
 app.get('/tarefas/nova', authMiddleware, asyncHandler(async (req, res) => {
