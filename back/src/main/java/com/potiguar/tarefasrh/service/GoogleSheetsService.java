@@ -166,7 +166,8 @@ public class GoogleSheetsService {
         String sheetName = range.contains("!") ? range.split("!")[0] : range;
         service.spreadsheets().values().clear(spreadsheetId, sheetName + "!A1:Z10000", null).execute();
         ValueRange body = new ValueRange().setValues(values);
-        service.spreadsheets().values().update(spreadsheetId, range, body).setValueInputOption("RAW").execute();
+        service.spreadsheets().values().update(spreadsheetId, range, body)
+                .setValueInputOption("USER_ENTERED").execute();
     }
 
     private Sheets getSheetsService() throws Exception {
