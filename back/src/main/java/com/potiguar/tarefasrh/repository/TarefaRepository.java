@@ -11,7 +11,6 @@ import java.util.List;
 
 public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     @org.springframework.data.jpa.repository.Query(value = "SELECT DISTINCT t FROM Tarefa t " +
-            "LEFT JOIN FETCH t.responsaveis " +
             "LEFT JOIN FETCH t.time " +
             "LEFT JOIN FETCH t.criadoPor " +
             "WHERE " +
