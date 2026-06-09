@@ -164,46 +164,6 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}")
-    @Transactional
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Tarefa dados, @RequestParam Long usuarioId) {
-        return tarefaRepository.findById(id).map(t -> {
-            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
-            if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
-
-            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
-            boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
-
-            if (!isGestor && !isCriador) {
-                return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
-            }
-
-            t.setTitulo(dados.getTitulo());
-            t.setDescricao(dados.getDescricao());
-            t.setComplexidade(dados.getComplexidade());
-            t.setCategoria(dados.getCategoria());
-            t.setDataPrazo(dados.getDataPrazo());
-            t.setPrevistoNoCargoGestor(dados.isPrevistoNoCargoGestor());
-
-            if (dados.getTime() != null && dados.getTime().getId() != null) {
-                t.setTime(timeRepository.findById(dados.getTime().getId()).orElse(null));
-                t.setResponsaveis(new java.util.HashSet<>());
-            } else {
-                t.setTime(null);
-                if (dados.getResponsaveis() != null) {
-                    java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
-                        .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                        .collect(Collectors.toSet());
-                    t.setResponsaveis(resps);
-                }
-            }
-
-            Tarefa salva = tarefaRepository.save(t);
-            googleSheetsService.syncAllTasks();
-            return ResponseEntity.ok(salva);
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
     @PutMapping("/{id}/status")
     public ResponseEntity<Tarefa> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String concluidoPorId = body.get("concluidoPorId");
@@ -239,72 +199,6 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{id}/feedback")
-    @Transactional
-    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        try {
-            return tarefaRepository.findById(id).map(t -> {
-                Object gestorIdObj = body.get("gestorId");
-                if (gestorIdObj == null) return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
-                Long gestorId = Long.valueOf(gestorIdObj.toString());
-                Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
-
-                if (gestor.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
-                    return ResponseEntity.status(403).body("Acesso negado. Apenas gestores podem enviar feedback.");
-                }
-
-                Feedback novoFeedback = Feedback.builder().tarefa(t).gestor(gestor).mensagem(body.get("feedback").toString()).build();
-                Feedback salvo = feedbackRepository.save(novoFeedback);
-                String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
-                t.getResponsaveis().forEach(u -> {
-                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
-                });
-                if (t.getTime() != null) {
-                    usuarioRepository.findAll().stream().filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
-                            .forEach(u -> {
-                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
-                            });
-                }
-                googleSheetsService.syncAllTasks();
-                return ResponseEntity.ok(salvo);
-            }).orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao salvar feedback: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/{id}/feedbacks")
-    public List<Feedback> listarFeedbacks(@PathVariable Long id) {
-        Tarefa t = tarefaRepository.findById(id).orElseThrow();
-        return feedbackRepository.findByTarefaOrderByDataCriacaoDesc(t);
-    }
-
-    @GetMapping("/calendario")
-    public List<Map<String, Object>> getCalendario(
-            @RequestParam(required = false) Long responsavelId,
-            @RequestParam(required = false) Long timeId,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
-        
-        List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
-        LocalDate hoje = LocalDate.now();
-
-        return tarefas.stream().map(t -> {
-            Map<String, Object> event = new HashMap<>();
-            event.put("id", t.getId());
-            event.put("title", t.getTitulo());
-            event.put("start", t.getDataPrazo().toString());
-            
-            String status = t.getStatus().name();
-            if (t.getStatus() == Status.PENDENTE && t.getDataPrazo().isBefore(hoje)) {
-                status = "ATRASADA";
-            }
-            event.put("status", status);
-
-            return event;
-        }).collect(Collectors.toList());
-    }
-
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -322,6 +216,7 @@ public class TarefaController {
 
         // Esforço das concluídas no período (Analítico)
         long esforcoConcluido = tarefasPerformance.stream()
+                .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null)
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
@@ -330,9 +225,9 @@ public class TarefaController {
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        long aderenciaGestorSim = tarefasPerformance.stream().filter(Tarefa::isPrevistoNoCargoGestor).count();
-        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> !t.isPrevistoNoCargoGestor()).count();
-        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
+        long aderenciaGestorSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.isPrevistoNoCargoGestor()).count();
+        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && !t.isPrevistoNoCargoGestor()).count();
+        long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
         // Capacidade
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
@@ -364,16 +259,15 @@ public class TarefaController {
                 .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
                 .limit(5).collect(Collectors.toList());
 
-        // Ranking
+        // Ranking de Performance (Apenas quem concluiu)
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
-        tarefasPerformance.forEach(t -> {
-            Usuario executor = t.getConcluidoPor();
-            if (executor == null && !t.getResponsaveis().isEmpty()) executor = t.getResponsaveis().iterator().next();
-            if (executor != null) {
+        tarefasPerformance.stream()
+            .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null)
+            .forEach(t -> {
+                Usuario executor = t.getConcluidoPor();
                 long pontos = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
                 pontosPorUsuario.put(executor, pontosPorUsuario.getOrDefault(executor, 0L) + pontos);
-            }
-        });
+            });
 
         List<Map<String, Object>> ranking = pontosPorUsuario.entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
@@ -403,7 +297,7 @@ public class TarefaController {
         stats.put("total", (long) tarefasStatus.size());
         stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
         stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
-        stats.put("concluida", tarefasStatus.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count()); 
+        stats.put("concluida", (long) tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count()); 
         stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         stats.put("total_times", timeRepository.count());
         stats.put("esforco_total", esforcoTotal); 

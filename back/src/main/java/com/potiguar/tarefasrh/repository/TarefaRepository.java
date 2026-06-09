@@ -37,19 +37,20 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
 
     @Query("SELECT YEAR(t.dataConclusao), MONTH(t.dataConclusao), " +
            "SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) * 3.0 " +
-           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao IS NOT NULL " +
+           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao IS NOT NULL AND t.concluidoPor IS NOT NULL " +
            "GROUP BY YEAR(t.dataConclusao), MONTH(t.dataConclusao)")
     List<Object[]> findMonthlyEffortData();
 
-    @Query("SELECT COALESCE(t.concluidoPor.nome, (SELECT MIN(r.nome) FROM t.responsaveis r)), " +
+    @Query("SELECT t.concluidoPor.nome, " +
            "SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END) as pontos " +
-           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao >= :start AND t.dataConclusao <= :end " +
-           "GROUP BY COALESCE(t.concluidoPor.nome, (SELECT MIN(r.nome) FROM t.responsaveis r)) " +
+           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.concluidoPor IS NOT NULL " +
+           "AND t.dataConclusao >= :start AND t.dataConclusao <= :end " +
+           "GROUP BY t.concluidoPor.nome " +
            "ORDER BY pontos DESC")
     List<Object[]> findRankingData(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(CASE WHEN t.complexidade = 'ALTA' THEN 5 WHEN t.complexidade = 'MEDIA' THEN 3 ELSE 1 END), 0) " +
-           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.dataConclusao >= :start AND t.dataConclusao <= :end")
+           "FROM Tarefa t WHERE t.status = 'CONCLUIDA' AND t.concluidoPor IS NOT NULL AND t.dataConclusao >= :start AND t.dataConclusao <= :end")
     long sumEsforcoConcluido(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("SELECT DISTINCT t FROM Tarefa t LEFT JOIN t.time time WHERE " +
