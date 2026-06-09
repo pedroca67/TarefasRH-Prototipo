@@ -187,6 +187,41 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/feedback")
+    @Transactional
+    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            return tarefaRepository.findById(id).map(t -> {
+                Object gestorIdObj = body.get("gestorId");
+                if (gestorIdObj == null) return ResponseEntity.badRequest().body("ID do gestor não fornecido.");
+                Long gestorId = Long.valueOf(gestorIdObj.toString());
+                Usuario gestor = usuarioRepository.findById(gestorId).orElseThrow();
+                Feedback novoFeedback = Feedback.builder().tarefa(t).gestor(gestor).mensagem(body.get("feedback").toString()).build();
+                Feedback salvo = feedbackRepository.save(novoFeedback);
+                String msg = "O gestor " + gestor.getNome() + " deixou um feedback na tarefa: " + t.getTitulo();
+                t.getResponsaveis().forEach(u -> {
+                    notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
+                });
+                if (t.getTime() != null) {
+                    usuarioRepository.findAll().stream().filter(u -> u.getTime() != null && u.getTime().getId().equals(t.getTime().getId()))
+                            .forEach(u -> {
+                                notificacaoRepository.save(com.potiguar.tarefasrh.model.Notificacao.builder().tipo("FEEDBACK").mensagem(msg).usuario(u).referenciaId(t.getId()).build());
+                            });
+                }
+                googleSheetsService.syncAllTasks();
+                return ResponseEntity.ok(salvo);
+            }).orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao salvar feedback: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/feedbacks")
+    public List<Feedback> listarFeedbacks(@PathVariable Long id) {
+        Tarefa t = tarefaRepository.findById(id).orElseThrow();
+        return feedbackRepository.findByTarefaOrderByDataCriacaoDesc(t);
+    }
+
     @GetMapping("/calendario")
     public List<Map<String, Object>> getCalendario(
             @RequestParam(required = false) Long responsavelId,
