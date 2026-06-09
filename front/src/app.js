@@ -88,9 +88,9 @@ app.get('/api/internal/notificacoes', authMiddleware, asyncHandler(async (req, r
 }));
 
 app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
-    const { responsavelId, timeId, start, end } = req.query;
+    const { start, end, responsavelId, timeId } = req.query;
     try {
-        const response = await apiService.getCalendario(responsavelId, timeId, start, end);
+        const response = await apiService.getCalendario(start, end, responsavelId, timeId);
         res.json(response.data);
     } catch (error) {
         console.error('Erro ao buscar dados do calendário:', error);
@@ -270,6 +270,12 @@ app.get('/tarefas', authMiddleware, asyncHandler(async (req, res) => {
 
 app.get('/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
     res.render('tarefas/calendario', { currentPage: 'calendario' });
+}));
+
+app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res) => {
+    const { start, end, responsavelId, timeId } = req.query;
+    const response = await apiService.getCalendario(responsavelId, timeId, start, end);
+    res.json(response.data);
 }));
 
 app.get('/tarefas/nova', authMiddleware, asyncHandler(async (req, res) => {

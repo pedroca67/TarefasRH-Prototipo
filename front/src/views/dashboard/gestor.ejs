@@ -137,7 +137,7 @@
 </div>
 
 <!-- Linha 2: Métricas de Performance e Auditoria -->
-<% const produtividadeWidth = stats.total_horas_est > 0 ? Math.round((stats.concluidas_horas_est / stats.total_horas_est) * 100) : 0; %>
+<% const produtividadeWidth = stats.total_horas_est > 0 ? Math.min(100, Math.round((stats.concluidas_horas_est / stats.total_horas_est) * 100)) : 0; %>
 <% const aderenciaTotal = (stats.aderencia_gestor_sim || 0) + (stats.aderencia_gestor_nao || 0); %>
 <% const aderenciaWidth = aderenciaTotal > 0 ? Math.round(((stats.aderencia_gestor_sim || 0) / aderenciaTotal) * 100) : 0; %>
 

@@ -21,9 +21,11 @@ module.exports = {
     getTimes: () => api.get('/times'),
 
     // Tarefas
-    getTarefas: (responsavelId, timeId, startDate, endDate, page = 0, size = 10, search = '', status = '', complexidade = '', categoria = '') => 
+    getTarefas: (responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria) => 
         api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria } }),
     getTarefa: (id, usuarioId) => api.get(`/tarefas/${id}`, { params: { usuarioId } }),
+    getCalendario: (start, end, responsavelId, timeId) => 
+        api.get('/tarefas/calendario', { params: { start, end, responsavelId, timeId } }),
     criarTarefa: (dados) => api.post('/tarefas', dados),
     atualizarTarefa: (id, dados, usuarioId) => api.put(`/tarefas/${id}`, dados, { params: { usuarioId } }),
     atualizarStatus: (id, status, evidencia, previstoNoCargoColaborador, concluidoPorId) => api.put(`/tarefas/${id}/status`, { status, evidencia, previstoNoCargoColaborador, concluidoPorId }),
