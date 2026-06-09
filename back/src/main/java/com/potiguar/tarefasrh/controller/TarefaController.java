@@ -291,6 +291,17 @@ public class TarefaController {
         
         long concluidasHorasEst = esforcoConcluido * 3;
 
+        // --- AJUSTE DE ATRASADAS: Visão Inclusiva para o Gestor ---
+        // Pegamos todas as atrasadas cujo PRAZO cai no período, mesmo se criadas antes.
+        long atrasadasCount = todasBase.stream()
+            .filter(t -> t.getStatus() == Status.ATRASADA)
+            .filter(t -> {
+                LocalDate prazo = t.getDataPrazo();
+                if (startDate != null && prazo.isBefore(startDate)) return false;
+                if (endDate != null && prazo.isAfter(endDate)) return false;
+                return true;
+            }).count();
+
         // Ranking (Top 5 mais urgentes atrasadas)
         List<Tarefa> topAtrasadas = todasBase.stream()
                 .filter(t -> t.getStatus() == Status.ATRASADA)
@@ -336,8 +347,8 @@ public class TarefaController {
         stats.put("total", (long) tarefasStatus.size());
         stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
         stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
-        stats.put("concluida", (long) tarefasPerformance.size()); // Concluídas NO PERÍODO
-        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        stats.put("concluida", (long) tarefasPerformance.size()); 
+        stats.put("atrasada", atrasadasCount); // <--- AQUI ESTÁ O NOVO CONTADOR
         stats.put("total_times", timeRepository.count());
         stats.put("esforco_total", (long)totalHorasEst / 3); 
         stats.put("esforco_concluido", esforcoConcluido);
