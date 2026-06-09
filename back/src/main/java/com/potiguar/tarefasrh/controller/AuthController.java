@@ -19,10 +19,21 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         String identificador = request.getEmail();
-        Usuario usuario = usuarioRepository.findByEmailOrCodigoFuncionario(identificador, identificador).orElse(null);
+        Usuario usuario;
+        
+        if (identificador.contains("@")) {
+            usuario = usuarioRepository.findByEmail(identificador).orElse(null);
+        } else {
+            usuario = usuarioRepository.findByCodigoFuncionario(identificador).orElse(null);
+        }
 
-        if (usuario == null || !passwordEncoder.matches(request.getSenha(), usuario.getSenha())) {
-            return ResponseEntity.status(401).body("E-mail ou senha inválidos.");
+        if (usuario == null) {
+            String msg = identificador.contains("@") ? "E-mail não encontrado." : "Código de funcionário não encontrado.";
+            return ResponseEntity.status(401).body(msg);
+        }
+
+        if (!passwordEncoder.matches(request.getSenha(), usuario.getSenha())) {
+            return ResponseEntity.status(401).body("Senha incorreta.");
         }
 
         if (!usuario.isAtivo()) {

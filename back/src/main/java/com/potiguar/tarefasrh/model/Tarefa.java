@@ -1,5 +1,6 @@
 package com.potiguar.tarefasrh.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -42,15 +43,6 @@ public class Tarefa {
     @Column(name = "previsto_no_cargo_colaborador")
     private Boolean previstoNoCargoColaborador;
 
-    // Getters customizados para garantir tratamento de nulos
-    public boolean isPrevistoNoCargoGestor() {
-        return previstoNoCargoGestor == null || previstoNoCargoGestor;
-    }
-
-    public Boolean getPrevistoNoCargoColaborador() {
-        return previstoNoCargoColaborador;
-    }
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -69,18 +61,22 @@ public class Tarefa {
     @Column(name = "data_conclusao")
     private LocalDateTime dataConclusao;
 
-    @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Feedback> feedbacks = new HashSet<>();
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "concluido_por")
     private Usuario concluidoPor;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "criado_por")
     private Usuario criadoPor;
 
+    @JsonIgnore
     @ManyToMany
     @JoinTable(
         name = "tarefa_responsavel",
