@@ -58,7 +58,7 @@ public class GoogleSheetsService {
             
             // --- ABA 1: BASE_TAREFAS ---
             List<List<Object>> valuesTarefas = new ArrayList<>();
-            valuesTarefas.add(Arrays.asList("ID", "Criação", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
+            valuesTarefas.add(Arrays.asList("ID", "Título", "Descrição", "Responsável(is)", "Time", "Categoria", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criado Por", "Unidade do Criador", "Executor de Fato", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Criação", "Prazo", "Conclusão", "Evidência", "Feedback Gestor"));
             
             for (Tarefa t : tarefas) {
                 String responsaveisLabel;
@@ -78,7 +78,6 @@ public class GoogleSheetsService {
 
                 valuesTarefas.add(Arrays.asList(
                     t.getId().toString(),
-                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
                     t.getTitulo(),
                     t.getDescricao() != null ? t.getDescricao() : "-",
                     responsaveisLabel, t.getTime() != null ? t.getTime().getNome() : "-",
@@ -88,6 +87,7 @@ public class GoogleSheetsService {
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getNome() : "-",
                     t.getStatus().toString(), t.getComplexidade().toString(), esforco, esforco * 3,
+                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
                     t.getDataPrazo().toString(), 
                     t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "-",
                     t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
@@ -122,7 +122,7 @@ public class GoogleSheetsService {
 
             // --- ABA 4: LOOKER_DASHBOARD ---
             List<List<Object>> valuesLooker = new ArrayList<>();
-            valuesLooker.add(Arrays.asList("ID", "Criação", "Título", "Responsável(is)", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Prazo", "Conclusão"));
+            valuesLooker.add(Arrays.asList("ID", "Título", "Responsável(is)", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criação", "Prazo", "Conclusão"));
             for (Tarefa t : tarefas) {
                 String responsaveisLabel;
                 if (t.getTime() != null) responsaveisLabel = "Time: " + t.getTime().getNome();
@@ -131,7 +131,6 @@ public class GoogleSheetsService {
                 
                 valuesLooker.add(Arrays.asList(
                     t.getId().toString(),
-                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
                     t.getTitulo(), responsaveisLabel, t.getTime() != null ? t.getTime().getNome() : "-",
                     t.getConcluidoPor() != null ? t.getConcluidoPor().getLoja() : (t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-"),
                     t.getCategoria().toString(), t.getStatus().toString(), t.getComplexidade().toString(),
@@ -139,6 +138,7 @@ public class GoogleSheetsService {
                     PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 3,
                     t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
+                    t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "-",
                     t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "-"
                 ));
             }
