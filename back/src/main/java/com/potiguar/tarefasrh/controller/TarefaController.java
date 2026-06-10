@@ -340,6 +340,12 @@ public class TarefaController {
         }).collect(Collectors.toList());
     }
 
+    @PostMapping("/admin/sync")
+    public ResponseEntity<?> forcSync() {
+        googleSheetsService.syncAllTasks();
+        return ResponseEntity.ok("Sincronização iniciada.");
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
