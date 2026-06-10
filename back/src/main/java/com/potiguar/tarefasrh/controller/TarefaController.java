@@ -1,5 +1,6 @@
 package com.potiguar.tarefasrh.controller;
 
+import com.potiguar.tarefasrh.dto.CalendarioEventoDTO;
 import com.potiguar.tarefasrh.model.Status;
 import com.potiguar.tarefasrh.model.Tarefa;
 import com.potiguar.tarefasrh.model.Usuario;
@@ -238,30 +239,33 @@ public class TarefaController {
     }
 
     @GetMapping("/calendario")
-    public List<Map<String, Object>> calendario(
+    public List<CalendarioEventoDTO> calendario(
             @RequestParam(required = false) Long responsavelId,
             @RequestParam(required = false) Long timeId,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
         
         List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
-        
+        LocalDate hoje = LocalDate.now();
+
         return tarefas.stream().map(t -> {
-            Map<String, Object> event = new java.util.HashMap<>();
-            event.put("id", t.getId());
-            event.put("title", t.getTitulo());
-            event.put("start", t.getDataPrazo().toString());
-            
             boolean atrasada = t.getStatus() == Status.ATRASADA || 
-                               (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now()));
+                               (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(hoje));
             
-            if (t.getStatus() == Status.CONCLUIDA) event.put("color", "#28a745");
-            else if (atrasada) event.put("color", "#dc3545");
-            else if (t.getStatus() == Status.EM_ANDAMENTO) event.put("color", "#0d6efd");
-            else event.put("color", "#ffc107");
-            
-            return event;
-        }).collect(java.util.stream.Collectors.toList());
+            String color = "#ffc107"; // PENDENTE default
+            if (t.getStatus() == Status.CONCLUIDA) color = "#28a745";
+            else if (atrasada) color = "#dc3545";
+            else if (t.getStatus() == Status.EM_ANDAMENTO) color = "#0d6efd";
+
+            return CalendarioEventoDTO.builder()
+                .id(t.getId())
+                .title(t.getTitulo())
+                .start(t.getDataPrazo().toString())
+                .color(color)
+                .status(atrasada ? "ATRASADA" : t.getStatus().name())
+                .url("/tarefas/" + t.getId())
+                .build();
+        }).collect(Collectors.toList());
     }
 
     @GetMapping("/stats")
