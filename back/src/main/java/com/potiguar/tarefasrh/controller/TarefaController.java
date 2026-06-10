@@ -208,58 +208,39 @@ public class TarefaController {
         List<Tarefa> todasBase = tarefaRepository.findAll();
         todasBase = atualizarStatusAtrasadas(todasBase);
 
-        // RÉGUA OPERACIONAL: Filtra por Criação
-        List<Tarefa> tarefasStatus = filtrarPorPeriodo(todasBase, startDate, endDate, false);
+        // RÉGUA ÚNICA PARA CARDS (Criação): Garante Total = P + E + C + A
+        List<Tarefa> tarefasOperacionais = filtrarPorPeriodo(todasBase, startDate, endDate, false);
         
-        // RÉGUA ANALÍTICA: Filtra por Conclusão
+        // RÉGUA ANALÍTICA (Conclusão): Para Ranking e Aderência (Resultados do Mês)
         List<Tarefa> tarefasPerformance = filtrarPorPeriodo(todasBase, startDate, endDate, true);
 
-        // Esforço das concluídas no período (Analítico)
-        long esforcoConcluido = tarefasPerformance.stream()
+        // Esforço TOTAL das tarefas nascidas no período (Carga Planejada)
+        long esforcoCriado = tarefasOperacionais.stream()
+                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
+                .sum();
+
+        // Esforço das tarefas CONCLUÍDAS no período (Carga Entregue)
+        long esforcoEntregue = tarefasPerformance.stream()
                 .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null)
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        // Esforço TOTAL das tarefas nascidas no período (Operacional)
-        long esforcoTotal = tarefasStatus.stream()
-                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
-                .sum();
-
+        // Aderência ao Cargo (Baseada em tudo o que foi entregue no mês)
         long aderenciaGestorSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoGestor()).count();
-        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && !t.getPrevistoNoCargoGestor()).count();
+        long aderenciaGestorTotal = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count();
         long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
-        // Capacidade
-        List<Usuario> todosUsuarios = usuarioRepository.findAll();
-        double totalHorasEst = 0;
-        LocalDate dataMinimaAdmissao = todosUsuarios.stream().map(u -> u.getDataCriacao().toLocalDate()).min(LocalDate::compareTo).orElse(LocalDate.now().minusDays(30));
-        LocalDate filterStart = startDate != null ? startDate : dataMinimaAdmissao;
-        LocalDate filterEnd = endDate != null ? endDate : LocalDate.now();
+        // Carga Horária Estimada (trabalho real das 87 tarefas, não capacidade teórica)
+        long totalHorasTrabalho = esforcoCriado * 3;
+        long concluidaHorasTrabalho = esforcoEntregue * 3;
 
-        for (Usuario u : todosUsuarios) {
-            LocalDate admission = u.getDataCriacao().toLocalDate();
-            LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
-            LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
-            LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
-            if (!activeStart.isAfter(activeEnd)) {
-                long activeDays = java.time.temporal.ChronoUnit.DAYS.between(activeStart, activeEnd) + 1;
-                totalHorasEst += (activeDays * (40.0 / 7.0));
-            }
-        }
-        
-        long concluidasHorasEst = esforcoConcluido * 3;
-
-        // Atenção Prioritária: Atrasadas cujo PRAZO cai no período do filtro
-        List<Tarefa> topAtrasadas = todasBase.stream()
+        // Atenção Prioritária (Atrasadas do Período)
+        List<Tarefa> topAtrasadas = tarefasOperacionais.stream()
                 .filter(t -> t.getStatus() == Status.ATRASADA)
-                .filter(t -> {
-                    LocalDate prazo = t.getDataPrazo();
-                    return (startDate == null || !prazo.isBefore(startDate)) && (endDate == null || !prazo.isAfter(endDate));
-                })
                 .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
                 .limit(5).collect(Collectors.toList());
 
-        // Ranking de Performance (Apenas quem concluiu)
+        // Ranking de Performance (Baseado em quem entregou no mês)
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
         tarefasPerformance.stream()
             .filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null)
@@ -281,6 +262,7 @@ public class TarefaController {
                 }).collect(Collectors.toList());
 
         // Turnover
+        List<Usuario> todosUsuarios = usuarioRepository.findAll();
         List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate mesRef = LocalDate.now().minusMonths(i);
@@ -294,19 +276,25 @@ public class TarefaController {
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("total", (long) tarefasStatus.size());
-        stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
-        stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
-        stats.put("concluida", (long) tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count()); 
-        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        // CARDS (Tudo do balde OPERACIONAL)
+        stats.put("total", (long) tarefasOperacionais.size());
+        stats.put("pendente", tarefasOperacionais.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
+        stats.put("em_andamento", tarefasOperacionais.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        stats.put("concluida", tarefasOperacionais.stream().filter(t -> t.getStatus() == Status.CONCLUIDA).count()); 
+        stats.put("atrasada", tarefasOperacionais.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", esforcoTotal); 
-        stats.put("esforco_concluido", esforcoConcluido);
+        
+        // MÉTRICAS (Usa entrega vs planejado)
+        stats.put("total_horas_est", totalHorasTrabalho); // Carga total de trabalho
+        stats.put("concluidas_horas_est", concluidaHorasTrabalho); // Carga entregue
+        stats.put("esforco_total", esforcoCriado); 
+        stats.put("esforco_concluido", esforcoEntregue);
+        
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
-        stats.put("aderencia_gestor_nao", aderenciaGestorNao);
+        stats.put("aderencia_gestor_nao", aderenciaGestorTotal - aderenciaGestorSim);
         stats.put("aderencia_colab_sim", aderenciaColabSim);
-        stats.put("total_horas_est", (long)totalHorasEst);
-        stats.put("concluidas_horas_est", concluidasHorasEst);
+        
         stats.put("ranking", ranking);
         stats.put("topAtrasadas", topAtrasadas);
         stats.put("turnover", turnoverData);
