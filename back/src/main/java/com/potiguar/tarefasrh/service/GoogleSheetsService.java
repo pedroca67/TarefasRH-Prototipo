@@ -145,7 +145,7 @@ public class GoogleSheetsService {
         GoogleCredentials credentials;
         String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
         if (credentialsJson != null && !credentialsJson.isBlank()) {
-            credentials = GoogleCredentials.fromStream(credentialsJson.trim().getBytes(StandardCharsets.UTF_8)));
+            credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.trim().getBytes(StandardCharsets.UTF_8)));
         } else {
             try (InputStream credentialsStream = Files.newInputStream(Path.of(googleCredentialsPath))) {
                 credentials = GoogleCredentials.fromStream(credentialsStream);
