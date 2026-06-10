@@ -19,4 +19,9 @@ public class Time {
 
     @Column(nullable = false, length = 100)
     private String nome;
+
+    @OneToMany(mappedBy = "time")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Builder.Default
+    private java.util.Set<Usuario> membros = new java.util.HashSet<>();
 }
