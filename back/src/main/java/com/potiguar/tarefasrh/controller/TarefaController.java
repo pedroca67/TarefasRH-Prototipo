@@ -1,6 +1,8 @@
 package com.potiguar.tarefasrh.controller;
 
 import com.potiguar.tarefasrh.dto.CalendarioEventoDTO;
+import com.potiguar.tarefasrh.dto.TarefaDTO;
+import com.potiguar.tarefasrh.dto.UsuarioDTO;
 import com.potiguar.tarefasrh.model.Status;
 import com.potiguar.tarefasrh.model.Tarefa;
 import com.potiguar.tarefasrh.model.Usuario;
@@ -126,12 +128,14 @@ public class TarefaController {
         int startIdx = Math.min(page * size, totalItems);
         int endIdx = Math.min(startIdx + size, totalItems);
         
-        List<Tarefa> paginatedContent = tarefas.subList(startIdx, endIdx);
+        List<TarefaDTO> paginatedContent = tarefas.subList(startIdx, endIdx).stream()
+                .map(TarefaDTO::fromEntity)
+                .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("content", paginatedContent);
         response.put("currentPage", page);
-        response.put("totalItems", totalItems);
+        response.put("totalItems", (long)totalItems);
         response.put("totalPages", totalPages);
 
         return response;
@@ -153,16 +157,16 @@ public class TarefaController {
         }
         Tarefa salva = tarefaRepository.saveAndFlush(tarefa);
         googleSheetsService.syncAllTasks();
-        return ResponseEntity.ok(salva);
+        return ResponseEntity.ok(TarefaDTO.fromEntity(salva));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tarefa> buscar(@PathVariable Long id, @RequestParam(required = false) Long usuarioId) {
+    public ResponseEntity<TarefaDTO> buscar(@PathVariable Long id, @RequestParam(required = false) Long usuarioId) {
         return tarefaRepository.findById(id).map(t -> {
             if (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now())) {
                 t.setStatus(Status.ATRASADA);
             }
-            return ResponseEntity.ok(t);
+            return ResponseEntity.ok(TarefaDTO.fromEntity(t));
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -197,8 +201,6 @@ public class TarefaController {
                     t.setTime(time);
                     t.setResponsaveis(new java.util.HashSet<>());
                     
-                    // Se o banco exigir responsavel_id, não podemos setar null. 
-                    // Mantemos o anterior ou setamos o usuário atual como 'lead'.
                     if (t.getResponsavel() == null) {
                         t.setResponsavel(user);
                     }
@@ -209,15 +211,13 @@ public class TarefaController {
                             .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
                             .collect(Collectors.toSet());
                         t.setResponsaveis(resps);
-                        
-                        // Sincroniza coluna legada responsavel_id com o primeiro da lista
                         t.setResponsavel(resps.iterator().next());
                     }
                 }
 
                 Tarefa salva = tarefaRepository.saveAndFlush(t);
                 googleSheetsService.syncAllTasks();
-                return ResponseEntity.ok(salva);
+                return ResponseEntity.ok(TarefaDTO.fromEntity(salva));
             }).orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             log.error("ERRO CRÍTICO NA ATUALIZAÇÃO DA TAREFA {}: ", id, e);
@@ -227,21 +227,21 @@ public class TarefaController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<Tarefa> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<TarefaDTO> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String concluidoPorId = body.get("concluidoPorId");
         if (concluidoPorId == null) return ResponseEntity.badRequest().build();
         Long usuarioId = Long.parseLong(concluidoPorId);
 
         return tarefaRepository.findById(id).map(t -> {
             Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
-            if (user == null) return ResponseEntity.status(401).<Tarefa>build();
+            if (user == null) return ResponseEntity.status(401).<TarefaDTO>build();
 
             boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
             boolean isResponsavel = t.getResponsaveis().stream().anyMatch(r -> r.getId().equals(usuarioId));
             boolean isDoTime = t.getTime() != null && user.getTime() != null && t.getTime().getId().equals(user.getTime().getId());
 
             if (!isGestor && !isResponsavel && !isDoTime) {
-                return ResponseEntity.status(403).<Tarefa>build();
+                return ResponseEntity.status(403).<TarefaDTO>build();
             }
 
             Status novoStatus = Status.valueOf(body.get("status"));
@@ -257,7 +257,7 @@ public class TarefaController {
             t.setStatus(novoStatus);
             Tarefa salva = tarefaRepository.save(t);
             googleSheetsService.syncAllTasks();
-            return ResponseEntity.ok(salva);
+            return ResponseEntity.ok(TarefaDTO.fromEntity(salva));
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -379,14 +379,16 @@ public class TarefaController {
         long concluidasHorasEst = esforcoConcluido * 3;
 
         // Atenção Prioritária (Respeitando o filtro de período pelo Prazo conforme solicitado)
-        List<Tarefa> topAtrasadas = todasBase.stream()
+        List<TarefaDTO> topAtrasadas = todasBase.stream()
                 .filter(t -> t.getStatus() == Status.ATRASADA)
                 .filter(t -> {
                     LocalDate prazo = t.getDataPrazo();
                     return (startDate == null || !prazo.isBefore(startDate)) && (endDate == null || !prazo.isAfter(endDate));
                 })
                 .sorted((a, b) -> a.getDataPrazo().compareTo(b.getDataPrazo()))
-                .limit(5).collect(Collectors.toList());
+                .limit(5)
+                .map(TarefaDTO::fromEntity)
+                .collect(Collectors.toList());
 
         // Ranking de Performance (Baseado em quem entregou no mês)
         Map<Usuario, Long> pontosPorUsuario = new HashMap<>();
