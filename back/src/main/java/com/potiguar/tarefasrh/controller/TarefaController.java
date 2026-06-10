@@ -202,7 +202,10 @@ public class TarefaController {
     @GetMapping("/{id}/feedbacks")
     public ResponseEntity<List<Feedback>> listarFeedbacks(@PathVariable Long id) {
         return tarefaRepository.findById(id)
-            .map(t -> ResponseEntity.ok(new java.util.ArrayList<>(t.getFeedbacks())))
+            .map(t -> {
+                List<Feedback> list = new java.util.ArrayList<>(t.getFeedbacks());
+                return ResponseEntity.ok(list);
+            })
             .orElse(ResponseEntity.notFound().build());
     }
 
