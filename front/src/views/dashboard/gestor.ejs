@@ -64,8 +64,11 @@
       <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Total</div>
-            <div class="stat-value text-potiguar fw-bold" style="font-size: 2rem;"><%= stats.total %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Tarefas Ativas</div>
+            <div class="stat-value text-potiguar fw-bold" style="font-size: 2rem;">
+                <%= stats.total %>
+                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">tarefas não concluídas</small>
+            </div>
           </div>
           <div class="col-auto">
             <i class="bi bi-list-task fs-2 text-potiguar opacity-25"></i>
@@ -80,7 +83,10 @@
         <div class="row align-items-center g-0">
           <div class="col me-2">
             <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Pendentes</div>
-            <div class="stat-value text-warning fw-bold" style="font-size: 2rem;"><%= stats.pendente %></div>
+            <div class="stat-value text-warning fw-bold" style="font-size: 2rem;">
+                <%= stats.pendente %>
+                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">aguardando início</small>
+            </div>
           </div>
           <div class="col-auto">
             <i class="bi bi-clock fs-2 text-warning opacity-25"></i>
@@ -95,7 +101,10 @@
         <div class="row align-items-center g-0">
           <div class="col me-2">
             <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Em Andamento</div>
-            <div class="stat-value text-primary fw-bold" style="font-size: 2rem;"><%= stats.em_andamento %></div>
+            <div class="stat-value text-primary fw-bold" style="font-size: 2rem;">
+                <%= stats.em_andamento %>
+                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">em execução agora</small>
+            </div>
           </div>
           <div class="col-auto">
             <i class="bi bi-play-circle fs-2 text-primary opacity-25"></i>
@@ -109,8 +118,11 @@
       <div class="card-body p-3">
         <div class="row align-items-center g-0">
           <div class="col me-2">
-            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Concluídas</div>
-            <div class="stat-value text-success fw-bold" style="font-size: 2rem;"><%= stats.concluida %></div>
+            <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Entregas do Período</div>
+            <div class="stat-value text-success fw-bold" style="font-size: 2rem;">
+                <%= stats.concluida %>
+                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">concluídas no período selecionado</small>
+            </div>
           </div>
           <div class="col-auto">
             <i class="bi bi-check-circle fs-2 text-success opacity-25"></i>
@@ -125,7 +137,10 @@
         <div class="row align-items-center g-0">
           <div class="col me-2">
             <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Atrasadas</div>
-            <div class="stat-value text-danger fw-bold" style="font-size: 2rem;"><%= stats.atrasada %></div>
+            <div class="stat-value text-danger fw-bold" style="font-size: 2rem;">
+                <%= stats.atrasada %>
+                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">prazo vencido</small>
+            </div>
           </div>
           <div class="col-auto">
             <i class="bi bi-exclamation-triangle fs-2 text-danger opacity-25"></i>
@@ -150,6 +165,7 @@
                 <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Produtividade</div>
                 <div class="stat-value text-dark fw-bold" style="color: #6f42c1 !important; font-size: 1.8rem;">
                     <%= produtividadeWidth %>%
+                    <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">esforço entregue vs. planejado</small>
                 </div>
                 <div class="progress mt-1" style="height: 6px;">
                     <div class="progress-bar" role="progressbar" style="width: <%- produtividadeWidth %>% !important; background-color: #6f42c1;"></div>
@@ -167,6 +183,7 @@
                 <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Aderência ao Cargo</div>
                 <div class="stat-value text-dark fw-bold" style="color: #fd7e14 !important; font-size: 1.8rem;">
                     <%= aderenciaWidth %>%
+                    <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">tarefas previstas no cargo</small>
                 </div>
                 <div class="progress mt-1" style="height: 6px;">
                     <div class="progress-bar" role="progressbar" style="width: <%- aderenciaWidth %>% !important; background-color: #fd7e14;"></div>
@@ -184,6 +201,7 @@
                 <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Carga Horária Est.</div>
                 <div class="stat-value text-dark fw-bold" style="color: #20c997 !important; font-size: 1.8rem;">
                     <%= stats.total_horas_est %>h
+                    <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">esforço planejado no período</small>
                 </div>
               </div>
               <div class="col-auto">
@@ -199,7 +217,10 @@
             <div class="row align-items-center g-0">
               <div class="col me-2">
                 <div class="text-xs font-weight-bold text-muted text-uppercase mb-1" style="font-size: 0.85rem;">Times Ativos</div>
-                <div class="stat-value text-dark fw-bold" style="font-size: 1.8rem;"><%= stats.total_times %></div>
+                <div class="stat-value text-dark fw-bold" style="font-size: 1.8rem;">
+                    <%= stats.total_times %>
+                    <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">times cadastrados</small>
+                </div>
               </div>
               <div class="col-auto">
                 <i class="bi bi-diagram-3 fs-2 text-dark opacity-25"></i>
