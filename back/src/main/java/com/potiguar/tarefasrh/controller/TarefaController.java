@@ -289,11 +289,13 @@ public class TarefaController {
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("total", (long) tarefasStatus.size());
-        stats.put("pendente", tarefasStatus.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
-        stats.put("em_andamento", tarefasStatus.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        // Bloco 1 — Situação Atual (sem filtro de data)
+        stats.put("total", todasBase.stream().filter(t -> t.getStatus() != Status.CONCLUIDA).count());
+        stats.put("pendente", todasBase.stream().filter(t -> t.getStatus() == Status.PENDENTE).count());
+        stats.put("em_andamento", todasBase.stream().filter(t -> t.getStatus() == Status.EM_ANDAMENTO).count());
+        stats.put("atrasada", todasBase.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
+        // Bloco 2 — Desempenho do Período
         stats.put("concluida", (long) tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count()); 
-        stats.put("atrasada", tarefasStatus.stream().filter(t -> t.getStatus() == Status.ATRASADA).count());
         
         stats.put("total_times", timeRepository.count());
         stats.put("esforco_total", (long)totalHorasEst / 3); 
