@@ -65,14 +65,9 @@ public class GoogleSheetsService {
                 String responsaveisLabel;
                 String concluidoPor = "";
 
-                // Apenas preenche 'Concluído Por' se a tarefa estiver CONCLUIDA
-                if (t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA) {
-                    Usuario principal = t.getConcluidoPor();
-                    if (principal == null && t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) {
-                        principal = t.getResponsaveis().iterator().next();
-                    }
-                    if (principal != null) concluidoPor = principal.getNome();
-                    else if (t.getTime() != null) concluidoPor = "Time: " + t.getTime().getNome();
+                // Apenas preenche 'Concluído Por' se a tarefa estiver CONCLUIDA e tiver executor
+                if (t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getConcluidoPor() != null) {
+                    concluidoPor = t.getConcluidoPor().getNome();
                 }
 
                 if (t.getTime() != null) {
@@ -84,14 +79,14 @@ public class GoogleSheetsService {
                 }
                 
                 int esforco = PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0);
-                String feedbacks = (t.getFeedbacks() != null && !t.getFeedbacks().isEmpty()) 
+                String feedbacksStr = (t.getFeedbacks() != null && !t.getFeedbacks().isEmpty()) 
                     ? t.getFeedbacks().stream().map(f -> f.getGestor().getNome() + ": " + f.getMensagem()).collect(Collectors.joining(" | ")) 
                     : "-";
 
                 valuesTarefas.add(Arrays.asList(
                     t.getId().toString(), t.getTitulo(), t.getDescricao() != null ? t.getDescricao() : "-",
                     responsaveisLabel, concluidoPor, t.getTime() != null ? t.getTime().getNome() : "-",
-                    t.getCategoria().toString(), t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                    t.getCategoria().toString(), (t.getPrevistoNoCargoGestor() != null && t.getPrevistoNoCargoGestor()) ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getCriadoPor() != null ? t.getCriadoPor().getNome() : "Sistema",
                     t.getCriadoPor() != null ? t.getCriadoPor().getLoja() : "-",
@@ -99,27 +94,21 @@ public class GoogleSheetsService {
                     t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "",
                     t.getDataPrazo().toString(), 
                     t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : "",
-                    t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacks.isEmpty() ? "-" : feedbacks
+                    t.getEvidencia() != null ? t.getEvidencia() : "-", feedbacksStr.isEmpty() ? "-" : feedbacksStr
                 ));
             }
-
-            // --- ABA 2 e 3 (Sem mudanças estruturais) ---
 
             // --- ABA 4: LOOKER_DASHBOARD ---
             List<List<Object>> valuesLooker = new ArrayList<>();
             valuesLooker.add(Arrays.asList("ID", "Título", "Responsável Principal", "Concluído Por", "Time", "Loja", "Categoria", "Status", "Complexidade", "Esforço (Pts)", "Horas Est.", "Previsto Cargo (Gestor)", "Previsto Cargo (Colab)", "Criação", "Prazo", "Conclusão"));
             for (Tarefa t : tarefas) {
-                // Responsável Principal (Para Filtros - Sempre Preenchido)
                 String respPrincipal = "-";
                 if (t.getResponsaveis() != null && !t.getResponsaveis().isEmpty()) respPrincipal = t.getResponsaveis().iterator().next().getNome();
                 else if (t.getTime() != null) respPrincipal = "Time: " + t.getTime().getNome();
 
-                // Concluído Por (Para Ranking - Apenas se Concluída)
                 String concluidoPor = "";
-                if (t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA) {
-                    Usuario executor = t.getConcluidoPor() != null ? t.getConcluidoPor() : (!t.getResponsaveis().isEmpty() ? t.getResponsaveis().iterator().next() : null);
-                    if (executor != null) concluidoPor = executor.getNome();
-                    else if (t.getTime() != null) concluidoPor = "Time: " + t.getTime().getNome();
+                if (t.getStatus() == com.potiguar.tarefasrh.model.Status.CONCLUIDA && t.getConcluidoPor() != null) {
+                    concluidoPor = t.getConcluidoPor().getNome();
                 }
                 
                 valuesLooker.add(Arrays.asList(
@@ -128,7 +117,7 @@ public class GoogleSheetsService {
                     t.getCategoria().toString(), t.getStatus().toString(), t.getComplexidade().toString(),
                     PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0), 
                     PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0) * 3,
-                    t.isPrevistoNoCargoGestor() ? "SIM" : "NÃO",
+                    (t.getPrevistoNoCargoGestor() != null && t.getPrevistoNoCargoGestor()) ? "SIM" : "NÃO",
                     t.getPrevistoNoCargoColaborador() == null ? "-" : (t.getPrevistoNoCargoColaborador() ? "SIM" : "NÃO"),
                     t.getDataCriacao() != null ? t.getDataCriacao().toLocalDate().toString() : "",
                     t.getDataPrazo().toString(), t.getDataConclusao() != null ? t.getDataConclusao().toLocalDate().toString() : ""
@@ -137,7 +126,6 @@ public class GoogleSheetsService {
 
             try { updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas); } catch (Exception e) { System.err.println("Erro BASE_TAREFAS: " + e.getMessage()); }
             try { updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker); } catch (Exception e) { System.err.println("Erro LOOKER_DASHBOARD: " + e.getMessage()); }
-            // (Aba 2 e 3 continuam aqui...)
 
         } catch (Exception e) {
             System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());
@@ -157,7 +145,7 @@ public class GoogleSheetsService {
         GoogleCredentials credentials;
         String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
         if (credentialsJson != null && !credentialsJson.isBlank()) {
-            credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.trim().getBytes(StandardCharsets.UTF_8)));
+            credentials = GoogleCredentials.fromStream(credentialsJson.trim().getBytes(StandardCharsets.UTF_8)));
         } else {
             try (InputStream credentialsStream = Files.newInputStream(Path.of(googleCredentialsPath))) {
                 credentials = GoogleCredentials.fromStream(credentialsStream);

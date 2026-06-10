@@ -225,8 +225,8 @@ public class TarefaController {
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
-        long aderenciaGestorSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.isPrevistoNoCargoGestor()).count();
-        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && !t.isPrevistoNoCargoGestor()).count();
+        long aderenciaGestorSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoGestor()).count();
+        long aderenciaGestorNao = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && !t.getPrevistoNoCargoGestor()).count();
         long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
 
         // Capacidade
