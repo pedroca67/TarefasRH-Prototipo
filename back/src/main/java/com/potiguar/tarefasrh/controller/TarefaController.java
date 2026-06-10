@@ -238,12 +238,30 @@ public class TarefaController {
     }
 
     @GetMapping("/calendario")
-    public List<Tarefa> calendario(
+    public List<Map<String, Object>> calendario(
             @RequestParam(required = false) Long responsavelId,
             @RequestParam(required = false) Long timeId,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
-        return tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
+        
+        List<Tarefa> tarefas = tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
+        
+        return tarefas.stream().map(t -> {
+            Map<String, Object> event = new java.util.HashMap<>();
+            event.put("id", t.getId());
+            event.put("title", t.getTitulo());
+            event.put("start", t.getDataPrazo().toString());
+            
+            boolean atrasada = t.getStatus() == Status.ATRASADA || 
+                               (t.getStatus() != Status.CONCLUIDA && t.getDataPrazo().isBefore(LocalDate.now()));
+            
+            if (t.getStatus() == Status.CONCLUIDA) event.put("color", "#28a745");
+            else if (atrasada) event.put("color", "#dc3545");
+            else if (t.getStatus() == Status.EM_ANDAMENTO) event.put("color", "#0d6efd");
+            else event.put("color", "#ffc107");
+            
+            return event;
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     @GetMapping("/stats")
