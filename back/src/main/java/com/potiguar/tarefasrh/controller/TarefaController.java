@@ -298,7 +298,7 @@ public class TarefaController {
         stats.put("concluida", (long) tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count()); 
         
         stats.put("total_times", timeRepository.count());
-        stats.put("esforco_total", (long)totalHorasEst / 3); 
+        stats.put("esforco_total", (long)totalHorasEst); 
         stats.put("esforco_concluido", esforcoConcluido);
         
         stats.put("aderencia_gestor_sim", aderenciaGestorSim);
