@@ -209,6 +209,34 @@ public class TarefaController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/feedback")
+    @Transactional
+    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Long gestorId = Long.parseLong(body.get("gestorId"));
+        Usuario gestor = usuarioRepository.findById(gestorId).orElse(null);
+        if (gestor == null || gestor.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
+            return ResponseEntity.status(403).build();
+        }
+        return tarefaRepository.findById(id).map(t -> {
+            Feedback fb = new Feedback();
+            fb.setTarefa(t);
+            fb.setGestor(gestor);
+            fb.setMensagem(body.get("mensagem"));
+            fb.setDataCriacao(LocalDateTime.now());
+            feedbackRepository.save(fb);
+            return ResponseEntity.ok().build();
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/calendario")
+    public List<Tarefa> calendario(
+            @RequestParam(required = false) Long responsavelId,
+            @RequestParam(required = false) Long timeId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate end) {
+        return tarefaRepository.findForCalendario(responsavelId, timeId, start, end);
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
