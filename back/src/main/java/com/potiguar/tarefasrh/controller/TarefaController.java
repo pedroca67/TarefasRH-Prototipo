@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/tarefas")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class TarefaController {
 
     private final TarefaRepository tarefaRepository;
@@ -168,41 +169,61 @@ public class TarefaController {
     @PutMapping("/{id}")
     @Transactional
     public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Tarefa dados, @RequestParam Long usuarioId) {
-        return tarefaRepository.findById(id).map(t -> {
-            Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
-            if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
+        try {
+            log.info("Iniciando atualização da tarefa {}. Usuário logado: {}. Responsáveis no payload: {}", 
+                id, usuarioId, dados.getResponsaveis());
 
-            boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
-            boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
+            return tarefaRepository.findById(id).map(t -> {
+                Usuario user = usuarioRepository.findById(usuarioId).orElse(null);
+                if (user == null) return ResponseEntity.status(401).body("Usuário não encontrado.");
 
-            if (!isGestor && !isCriador) {
-                return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
-            }
+                boolean isGestor = user.getNivel() == com.potiguar.tarefasrh.model.Nivel.GESTOR;
+                boolean isCriador = t.getCriadoPor() != null && t.getCriadoPor().getId().equals(usuarioId);
 
-            t.setTitulo(dados.getTitulo());
-            t.setDescricao(dados.getDescricao());
-            t.setComplexidade(dados.getComplexidade());
-            t.setCategoria(dados.getCategoria());
-            t.setDataPrazo(dados.getDataPrazo());
-            t.setPrevistoNoCargoGestor(dados.getPrevistoNoCargoGestor());
-
-            if (dados.getTime() != null && dados.getTime().getId() != null) {
-                t.setTime(timeRepository.findById(dados.getTime().getId()).orElse(null));
-                t.setResponsaveis(new java.util.HashSet<>());
-            } else {
-                t.setTime(null);
-                if (dados.getResponsaveis() != null) {
-                    java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
-                        .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
-                        .collect(Collectors.toSet());
-                    t.setResponsaveis(resps);
+                if (!isGestor && !isCriador) {
+                    return ResponseEntity.status(403).body("Apenas o criador ou gestores podem editar esta tarefa.");
                 }
-            }
 
-            Tarefa salva = tarefaRepository.save(t);
-            googleSheetsService.syncAllTasks();
-            return ResponseEntity.ok(salva);
-        }).orElse(ResponseEntity.notFound().build());
+                t.setTitulo(dados.getTitulo());
+                t.setDescricao(dados.getDescricao());
+                t.setComplexidade(dados.getComplexidade());
+                t.setCategoria(dados.getCategoria());
+                t.setDataPrazo(dados.getDataPrazo());
+                t.setPrevistoNoCargoGestor(dados.getPrevistoNoCargoGestor());
+
+                // Lógica de Atribuição (Time ou Responsáveis)
+                if (dados.getTime() != null && dados.getTime().getId() != null) {
+                    Time time = timeRepository.findById(dados.getTime().getId()).orElse(null);
+                    t.setTime(time);
+                    t.setResponsaveis(new java.util.HashSet<>());
+                    
+                    // Se o banco exigir responsavel_id, não podemos setar null. 
+                    // Mantemos o anterior ou setamos o usuário atual como 'lead'.
+                    if (t.getResponsavel() == null) {
+                        t.setResponsavel(user);
+                    }
+                } else {
+                    t.setTime(null);
+                    if (dados.getResponsaveis() != null && !dados.getResponsaveis().isEmpty()) {
+                        java.util.Set<Usuario> resps = dados.getResponsaveis().stream()
+                            .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
+                            .collect(Collectors.toSet());
+                        t.setResponsaveis(resps);
+                        
+                        // Sincroniza coluna legada responsavel_id com o primeiro da lista
+                        t.setResponsavel(resps.iterator().next());
+                    }
+                }
+
+                Tarefa salva = tarefaRepository.saveAndFlush(t);
+                googleSheetsService.syncAllTasks();
+                return ResponseEntity.ok(salva);
+            }).orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("ERRO CRÍTICO NA ATUALIZAÇÃO DA TAREFA {}: ", id, e);
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro ao atualizar tarefa: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}/status")

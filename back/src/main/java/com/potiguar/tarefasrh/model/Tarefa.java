@@ -1,6 +1,7 @@
 package com.potiguar.tarefasrh.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -61,22 +62,26 @@ public class Tarefa {
     @Column(name = "data_conclusao")
     private LocalDateTime dataConclusao;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsavel_id")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Usuario responsavel;
+
     @JsonIgnore
     @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Feedback> feedbacks = new HashSet<>();
 
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "concluido_por")
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private Usuario concluidoPor;
 
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "criado_por")
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private Usuario criadoPor;
 
-    @JsonIgnore
     @ManyToMany
     @JoinTable(
         name = "tarefa_responsavel",
@@ -84,6 +89,7 @@ public class Tarefa {
         inverseJoinColumns = @JoinColumn(name = "usuario_id")
     )
     @Builder.Default
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private Set<Usuario> responsaveis = new HashSet<>();
 
     @ManyToOne
