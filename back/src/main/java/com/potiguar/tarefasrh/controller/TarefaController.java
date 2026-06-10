@@ -211,9 +211,17 @@ public class TarefaController {
 
     @PostMapping("/{id}/feedback")
     @Transactional
-    public ResponseEntity<?> salvarFeedback(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        Long gestorId = Long.parseLong(body.get("gestorId"));
-        Usuario gestor = usuarioRepository.findById(gestorId).orElse(null);
+    public ResponseEntity<?> salvarFeedback(
+            @PathVariable Long id,
+            @RequestParam(required = false) String feedback,
+            @RequestParam(required = false) String mensagem,
+            @RequestParam(required = false) String gestorId) {
+        
+        String texto = feedback != null ? feedback : mensagem;
+        if (texto == null || texto.isBlank()) return ResponseEntity.badRequest().body("Mensagem vazia.");
+        if (gestorId == null) return ResponseEntity.badRequest().body("gestorId ausente.");
+        
+        Usuario gestor = usuarioRepository.findById(Long.parseLong(gestorId)).orElse(null);
         if (gestor == null || gestor.getNivel() != com.potiguar.tarefasrh.model.Nivel.GESTOR) {
             return ResponseEntity.status(403).build();
         }
@@ -221,7 +229,7 @@ public class TarefaController {
             Feedback fb = new Feedback();
             fb.setTarefa(t);
             fb.setGestor(gestor);
-            fb.setMensagem(body.get("mensagem"));
+            fb.setMensagem(texto);
             fb.setDataCriacao(LocalDateTime.now());
             feedbackRepository.save(fb);
             return ResponseEntity.ok().build();
