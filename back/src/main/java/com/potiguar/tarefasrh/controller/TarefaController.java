@@ -220,6 +220,10 @@ public class TarefaController {
                 .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
                 .sum();
 
+        long esforcoTotalPeriodo = tarefasStatus.stream()
+                .mapToLong(t -> PESO_ESFORCO.getOrDefault(t.getComplexidade().toString(), 0))
+                .sum();
+
         long aderenciaGestorSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoGestor()).count();
         long aderenciaGestorTotal = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null).count();
         long aderenciaColabSim = tarefasPerformance.stream().filter(t -> t.getStatus() == Status.CONCLUIDA && t.getConcluidoPor() != null && t.getPrevistoNoCargoColaborador() != null && t.getPrevistoNoCargoColaborador()).count();
@@ -305,8 +309,8 @@ public class TarefaController {
         stats.put("aderencia_gestor_nao", aderenciaGestorTotal - aderenciaGestorSim);
         stats.put("aderencia_colab_sim", aderenciaColabSim);
         
-        stats.put("total_horas_est", (long)totalHorasEst);
-        stats.put("concluidas_horas_est", concluidasHorasEst);
+        stats.put("total_horas_est", esforcoTotalPeriodo);
+        stats.put("concluidas_horas_est", esforcoConcluido);
         stats.put("ranking", ranking);
         stats.put("topAtrasadas", topAtrasadas);
         stats.put("turnover", turnoverData);
