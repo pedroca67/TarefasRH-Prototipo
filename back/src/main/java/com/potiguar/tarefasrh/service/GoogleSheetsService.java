@@ -127,6 +127,26 @@ public class GoogleSheetsService {
             try { updateSheet(service, "BASE_TAREFAS!A1", valuesTarefas); } catch (Exception e) { System.err.println("Erro BASE_TAREFAS: " + e.getMessage()); }
             try { updateSheet(service, "LOOKER_DASHBOARD!A1", valuesLooker); } catch (Exception e) { System.err.println("Erro LOOKER_DASHBOARD: " + e.getMessage()); }
 
+            // --- ABA: BASE_TURNOVER ---
+            List<Usuario> usuariosList = tarefaRepository.findUsuariosForExport();
+            List<List<Object>> valuesTurnover = new ArrayList<>();
+            valuesTurnover.add(Arrays.asList("ID_Usuario", "Nome", "E-mail", "Loja", "Time", "Nível", "Status", "Data_Admissao", "Data_Desligamento"));
+
+            for (Usuario u : usuariosList) {
+                valuesTurnover.add(Arrays.asList(
+                    u.getId().toString(),
+                    u.getNome(),
+                    u.getEmail(),
+                    u.getLoja() != null ? u.getLoja() : "-",
+                    u.getTime() != null ? u.getTime().getNome() : "-",
+                    u.getNivel().toString(),
+                    u.isAtivo() ? "ATIVO" : "INATIVO",
+                    u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate().toString() : "",
+                    u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate().toString() : ""
+                ));
+            }
+            try { updateSheet(service, "BASE_TURNOVER!A1", valuesTurnover); } catch (Exception e) { System.err.println("Erro BASE_TURNOVER: " + e.getMessage()); }
+
         } catch (Exception e) {
             System.err.println("❌ ERRO CRÍTICO NO GOOGLE SHEETS: " + e.getMessage());
         } finally {
