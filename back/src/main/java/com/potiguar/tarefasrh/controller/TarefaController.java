@@ -199,6 +199,13 @@ public class TarefaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{id}/feedbacks")
+    public ResponseEntity<List<Feedback>> listarFeedbacks(@PathVariable Long id) {
+        return tarefaRepository.findById(id)
+            .map(t -> ResponseEntity.ok(new java.util.ArrayList<>(t.getFeedbacks())))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getStats(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
