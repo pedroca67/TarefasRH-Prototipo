@@ -151,6 +151,17 @@ public class TarefaController {
                 .map(u -> usuarioRepository.findById(u.getId()).orElseThrow())
                 .collect(Collectors.toList());
         tarefa.setResponsaveis(new java.util.HashSet<>(responsaveisCompletos));
+
+        if (!responsaveisCompletos.isEmpty()) {
+            tarefa.setResponsavel(responsaveisCompletos.get(0));
+        } else if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
+            timeRepository.findById(tarefa.getTime().getId()).ifPresent(time -> {
+                if (time.getMembros() != null && !time.getMembros().isEmpty()) {
+                    tarefa.setResponsavel(time.getMembros().iterator().next());
+                }
+            });
+        }
+
         if (tarefa.getTime() != null && tarefa.getTime().getId() != null) {
             Time timeCompleto = timeRepository.findById(tarefa.getTime().getId()).orElseThrow();
             tarefa.setTime(timeCompleto);
