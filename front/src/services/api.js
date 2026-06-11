@@ -41,5 +41,6 @@ module.exports = {
         api.get('/tarefas/stats', { params: { startDate, endDate, analyticalMode } }),
 
     // Admin Tools
-    triggerSync: () => api.post('/tarefas/sync-sheets')
+    post: (url, data) => api.post(url, data),
+    triggerSync: () => api.post('/tarefas/admin/sync')
 };

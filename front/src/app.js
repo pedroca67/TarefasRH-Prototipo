@@ -100,16 +100,10 @@ app.get('/api/tarefas/calendario', authMiddleware, asyncHandler(async (req, res)
     }
 }));
 
-// Rota Oculta de Administração
-app.get('/admin/forcar-sync', authMiddleware, asyncHandler(async (req, res) => {
-    try {
-        await apiService.triggerSync();
-        req.session.success = 'Sincronização com o Google Sheets iniciada em segundo plano com sucesso!';
-    } catch (error) {
-        req.session.error = 'Erro ao tentar forçar a sincronização.';
-        console.error('Erro no forcar-sync:', error);
-    }
-    res.redirect('/dashboard');
+app.post('/admin/forcar-sync', authMiddleware, gestorMiddleware, asyncHandler(async (req, res) => {
+    await apiService.post('/api/tarefas/admin/sync');
+    req.session.success = 'Sincronização com Google Sheets iniciada!';
+    res.redirect('/');
 }));
 
 // Rotas
