@@ -340,7 +340,7 @@ public class TarefaController {
         }).collect(Collectors.toList());
     }
 
-    @PostMapping("/admin/sync")
+    @GetMapping("/admin/sync")
     public ResponseEntity<?> forcSync() {
         googleSheetsService.syncAllTasks();
         return ResponseEntity.ok("Sincronização iniciada.");
