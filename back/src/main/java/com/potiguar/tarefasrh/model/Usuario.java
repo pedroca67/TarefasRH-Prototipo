@@ -46,8 +46,9 @@ public class Usuario {
     @Builder.Default
     private boolean ativo = true;
 
-    @Column(name = "data_criacao", insertable = false, updatable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
-    private java.time.LocalDateTime dataCriacao;
+    @Builder.Default
+    @Column(name = "data_criacao", nullable = false, updatable = false)
+    private java.time.LocalDateTime dataCriacao = java.time.LocalDateTime.now();
 
     @Column(name = "data_desativacao")
     private java.time.LocalDateTime dataDesativacao;

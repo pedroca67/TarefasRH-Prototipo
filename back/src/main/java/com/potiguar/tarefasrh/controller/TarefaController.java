@@ -378,12 +378,15 @@ public class TarefaController {
         // Capacidade (Restaurando lógica de Horas Estimadas baseada em usuários ativos)
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
         double totalHorasEst = 0;
-        LocalDate dataMinimaAdmissao = todosUsuarios.stream().map(u -> u.getDataCriacao().toLocalDate()).min(LocalDate::compareTo).orElse(LocalDate.now().minusDays(30));
+        LocalDate dataMinimaAdmissao = todosUsuarios.stream()
+                .map(u -> u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate() : LocalDate.now().minusDays(30))
+                .min(LocalDate::compareTo)
+                .orElse(LocalDate.now().minusDays(30));
         LocalDate filterStart = startDate != null ? startDate : dataMinimaAdmissao;
         LocalDate filterEnd = endDate != null ? endDate : LocalDate.now();
 
         for (Usuario u : todosUsuarios) {
-            LocalDate admission = u.getDataCriacao().toLocalDate();
+            LocalDate admission = u.getDataCriacao() != null ? u.getDataCriacao().toLocalDate() : LocalDate.now().minusDays(30);
             LocalDate deactivation = u.getDataDesativacao() != null ? u.getDataDesativacao().toLocalDate() : filterEnd.plusDays(1);
             LocalDate activeStart = admission.isAfter(filterStart) ? admission : filterStart;
             LocalDate activeEnd = deactivation.isBefore(filterEnd) ? deactivation : filterEnd;
@@ -432,7 +435,7 @@ public class TarefaController {
         List<Map<String, Object>> turnoverData = new java.util.ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate mesRef = LocalDate.now().minusMonths(i);
-            long adm = todosUsuarios.stream().filter(u -> u.getDataCriacao().getMonthValue() == mesRef.getMonthValue() && u.getDataCriacao().getYear() == mesRef.getYear()).count();
+            long adm = todosUsuarios.stream().filter(u -> u.getDataCriacao() != null && u.getDataCriacao().getMonthValue() == mesRef.getMonthValue() && u.getDataCriacao().getYear() == mesRef.getYear()).count();
             long des = todosUsuarios.stream().filter(u -> u.getDataDesativacao() != null && u.getDataDesativacao().getMonthValue() == mesRef.getMonthValue() && u.getDataDesativacao().getYear() == mesRef.getYear()).count();
             Map<String, Object> m = new HashMap<>();
             m.put("mes", mesRef.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("pt", "BR")));

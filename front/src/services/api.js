@@ -20,7 +20,7 @@ module.exports = {
     // Times
     getTimes: () => api.get('/times'),
 
-    // Tarefas
+    // Tarefas (tem que revisar isso)
     getTarefas: (responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria) => 
         api.get('/tarefas', { params: { responsavelId, timeId, startDate, endDate, page, size, search, status, complexidade, categoria } }),
     getTarefa: (id, usuarioId) => api.get(`/tarefas/${id}`, { params: { usuarioId } }),
