@@ -29,7 +29,12 @@ public class UsuarioDTO {
         dto.setNivel(u.getNivel());
         dto.setTime(u.getTime());
         dto.setLoja(u.getLoja());
-        dto.setFotoUrl(u.getFotoUrl());
+        if (u.getFotoUrl() != null && !u.getFotoUrl().trim().isEmpty()) {
+            dto.setFotoUrl(u.getFotoUrl());
+        } else {
+            String seed = u.getNome() != null ? u.getNome().replace(" ", "") : "Usuario";
+            dto.setFotoUrl("https://api.dicebear.com/7.x/avataaars/svg?seed=" + seed);
+        }
         dto.setAtivo(u.isAtivo());
         dto.setDataCriacao(u.getDataCriacao());
         return dto;
